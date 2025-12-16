@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Track, Playlist } from '../types';
-import { Music, List, Upload, FolderPlus, Search, Grid, Plus } from 'lucide-react';
+import { Music, List, Upload, FolderPlus, Search, Grid, Plus, Loader2 } from 'lucide-react';
 
 interface LibraryProps {
     onLoadTrack: (track: Track, deckId: number) => void;
@@ -31,6 +31,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     ]);
     const [samples] = useState(MOCK_SAMPLES);
     const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>('p1');
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     const filteredTracks = tracks.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -60,24 +61,37 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
             }
             return p;
         }));
-        // Optional feedback
-        console.log(`Added ${track.title} to playlist`);
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const url = URL.createObjectURL(file);
-            const newTrack: Track = {
-                id: `local-${Date.now()}`,
-                title: file.name.replace(/\.[^/.]+$/, ""),
-                artist: 'Unknown',
-                bpm: 0,
-                key: '-',
-                duration: 0,
-                url
-            };
-            setTracks([...tracks, newTrack]);
+            setIsAnalyzing(true);
+
+            // Simulate Analysis Delay
+            setTimeout(() => {
+                const url = URL.createObjectURL(file);
+
+                // Mock BPM Analysis: Generate random realistic BPM between 120-140
+                const mockBpm = Math.floor(Math.random() * (140 - 120 + 1)) + 120;
+
+                // Mock Key Analysis
+                const keys = ['Am', 'C', 'G', 'Dm', 'F', 'Em'];
+                const mockKey = keys[Math.floor(Math.random() * keys.length)];
+
+                const newTrack: Track = {
+                    id: `local-${Date.now()}`,
+                    title: file.name.replace(/\.[^/.]+$/, ""),
+                    artist: 'Local Artist', // Default since file object doesn't have metadata easily without parsing
+                    bpm: mockBpm,
+                    key: mockKey,
+                    duration: 300, // Mock duration
+                    url
+                };
+
+                setTracks([...tracks, newTrack]);
+                setIsAnalyzing(false);
+            }, 1500);
         }
     };
 
@@ -124,9 +138,10 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                 {activeTab === 'tracks' && (
                     <div>
                         <div className="p-2">
-                             <label className="flex items-center gap-2 p-2 bg-gray-700 rounded hover:bg-gray-600 cursor-pointer text-sm mb-2">
-                                <Upload size={16} /> Import File
-                                <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
+                             <label className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm mb-2 transition-colors ${isAnalyzing ? 'bg-gray-700 text-gray-400 cursor-wait' : 'bg-purple-900/40 text-purple-200 hover:bg-purple-900/60'}`}>
+                                {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                                {isAnalyzing ? 'Analyzing Audio...' : 'Import Track'}
+                                <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" disabled={isAnalyzing} />
                             </label>
                         </div>
                         {filteredTracks.map(track => (
@@ -143,7 +158,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                 </div>
                                 <div className="text-xs text-gray-500 flex justify-between mt-1">
                                     <span>{track.artist}</span>
-                                    <span>{track.bpm} BPM</span>
+                                    <span>{track.bpm} BPM • {track.key}</span>
                                 </div>
                                 <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
