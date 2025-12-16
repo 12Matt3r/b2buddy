@@ -6,6 +6,7 @@ import Library from './components/Library';
 import DrumRack from './components/DrumRack';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import BattleArena from './components/BattleArena';
+import MobileNav from './components/MobileNav'; // Import the new component
 import { Track } from './types';
 import { aiService } from './services/AILearningService';
 import { aiB2BService, AIAction } from './services/AIB2BService';
@@ -14,7 +15,10 @@ import { useMIDI } from './hooks/useMIDI';
 
 function App() {
   // Navigation State
-  const [view, setView] = useState<'studio' | 'analytics' | 'battle'>('studio');
+  // We'll treat 'view' as the source of truth.
+  // On Desktop: 'studio', 'battle', 'analytics' are distinct main views. Library is always visible in Studio/Analytics unless in Battle.
+  // On Mobile: 'studio', 'library', 'battle', 'analytics' are mutually exclusive tabs.
+  const [view, setView] = useState<'studio' | 'library' | 'battle' | 'analytics'>('studio');
 
   // App State
   const [deckATrack, setDeckATrack] = useState<Track | null>(null);
@@ -41,7 +45,6 @@ function App() {
           if (action.deckId === 1) setDeckBTrack(action.payload);
           else setDeckATrack(action.payload);
       } else if (action.type === 'CROSSFADER' && action.value !== undefined) {
-          // Smooth transition could go here, but jumping for MVP
           setCrossfader(action.value);
       }
   };
@@ -72,7 +75,6 @@ function App() {
   const handleLoadTrack = (track: Track, deckId: number) => {
     if (deckId === 0) {
         setDeckATrack(track);
-        // In Battle Mode, loading a track on Deck A triggers a turn submission
         if (view === 'battle') {
             battleService.submitPlayerTurn(track);
         }
@@ -80,7 +82,6 @@ function App() {
     else {
         setDeckBTrack(track);
     }
-
     aiService.logInteraction('load_track', `deck_${deckId}`, track.id);
   };
 
@@ -117,25 +118,29 @@ function App() {
 
   return (
     <div className="h-screen bg-gray-900 text-white flex flex-col md:flex-row overflow-hidden font-sans">
-      {/* Sidebar - Dynamically rendered based on view */}
-      {view === 'battle' ? (
-          <BattleArena />
-      ) : (
-          <div className="hidden md:block">
-             <Library onLoadTrack={handleLoadTrack} onLoadSample={handleLoadSample} />
-          </div>
-      )}
+
+      {/*
+        DESKTOP LAYOUT
+        Sidebar is always visible on desktop unless in specific modes where it's replaced
+      */}
+      <div className="hidden md:block h-full border-r border-gray-700">
+          {view === 'battle' ? (
+              <BattleArena />
+          ) : (
+              <Library onLoadTrack={handleLoadTrack} onLoadSample={handleLoadSample} />
+          )}
+      </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full relative">
 
-        {/* Top Navigation Bar */}
-        <div className="h-16 bg-gray-800 border-b border-gray-700 flex justify-between items-center px-4 md:px-6 shrink-0 z-20">
+        {/* Desktop Top Navigation Bar */}
+        <div className="hidden md:flex h-16 bg-gray-800 border-b border-gray-700 justify-between items-center px-6 shrink-0 z-20">
           <div className="flex items-center gap-3">
              <div className="bg-purple-600 p-2 rounded-lg shadow-lg shadow-purple-900/50">
                 <Layout size={24} className="text-white" />
              </div>
-             <div className="hidden md:block">
+             <div>
                 <h1 className="text-xl font-bold leading-none">B2Buddy <span className="text-purple-400">AI Arena</span></h1>
                 <div className="text-[10px] text-gray-400 uppercase tracking-widest">
                     {lastMessage ? <span className="text-green-400">MIDI ACTIVE</span> : <span>NO MIDI</span>}
@@ -146,53 +151,123 @@ function App() {
           <div className="flex bg-gray-900 rounded-lg p-1 border border-gray-700">
               <button
                 onClick={() => setView('studio')}
-                className={`px-3 md:px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${view === 'studio' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                className={`px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${view === 'studio' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
               >
-                  <Layout size={16} /> <span className="hidden md:inline">Studio</span>
+                  <Layout size={16} /> Studio
               </button>
               <button
                 onClick={() => setView('battle')}
-                className={`px-3 md:px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${view === 'battle' ? 'bg-red-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                className={`px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${view === 'battle' ? 'bg-red-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
               >
-                  <Swords size={16} /> <span className="hidden md:inline">Battle</span>
+                  <Swords size={16} /> Battle
               </button>
               <button
                 onClick={() => setView('analytics')}
-                className={`px-3 md:px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${view === 'analytics' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                className={`px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${view === 'analytics' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
               >
-                  <BarChart2 size={16} /> <span className="hidden md:inline">Analytics</span>
+                  <BarChart2 size={16} /> Analytics
               </button>
           </div>
 
           <button
              onClick={toggleB2B}
-             className={`px-3 md:px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 border transition-all ${isB2BActive ? 'bg-red-500 border-red-400 text-white animate-pulse' : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'}`}
+             className={`px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 border transition-all ${isB2BActive ? 'bg-red-500 border-red-400 text-white animate-pulse' : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'}`}
           >
-              <Radio size={16} /> <span className="hidden md:inline">{isB2BActive ? 'STOP B2B' : 'START B2B'}</span>
+              <Radio size={16} /> {isB2BActive ? 'STOP B2B' : 'START B2B'}
           </button>
         </div>
 
-        {/* View Content */}
-        <div className="flex-1 overflow-hidden relative bg-gray-900">
-            {view === 'analytics' ? (
-                <div className="h-full p-6 overflow-y-auto">
-                    <AnalyticsDashboard />
-                </div>
-            ) : (
-                <div className="h-full flex flex-col p-4 md:p-6 overflow-y-auto">
-                    {/* Mobile Library Toggle or View could be added here if needed */}
+        {/* Mobile Header (simplified) */}
+        <div className="md:hidden h-14 bg-gray-800 border-b border-gray-700 flex justify-between items-center px-4 shrink-0">
+            <h1 className="text-lg font-bold">B2Buddy</h1>
+             <button
+                onClick={toggleB2B}
+                className={`px-3 py-1 rounded-full text-xs font-bold border ${isB2BActive ? 'bg-red-500 border-red-400' : 'bg-gray-700 border-gray-600'}`}
+             >
+                 {isB2BActive ? 'B2B ON' : 'B2B OFF'}
+             </button>
+        </div>
 
-                    {/* Decks & Mixer Row */}
-                    <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-6 mb-6">
+        {/* Content View - Scrollable */}
+        <div className="flex-1 overflow-hidden relative bg-gray-900 pb-16 md:pb-0">
+            {/* pb-16 on mobile to account for bottom nav */}
+
+            {/* MOBILE: LIBRARY VIEW */}
+            <div className={`h-full ${view === 'library' ? 'block' : 'hidden md:hidden'}`}>
+                <Library onLoadTrack={handleLoadTrack} onLoadSample={handleLoadSample} />
+            </div>
+
+            {/* STUDIO VIEW (Desktop & Mobile) */}
+            <div className={`h-full overflow-y-auto ${view === 'studio' ? 'block' : 'hidden'}`}>
+                <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-6 p-4 md:p-6">
+                    <DJDeck
+                        id={1}
+                        track={deckATrack}
+                        isActive={crossfader < 0.5}
+                        onParameterChange={(p, v) => handleDeckParamChange(0, p, v)}
+                    />
+
+                    <div className="order-last md:order-none w-full md:w-auto flex justify-center">
+                        <Mixer
+                            crossfader={crossfader}
+                            setCrossfader={handleCrossfaderChange}
+                            volumes={volumes}
+                            setVolume={handleVolumeChange}
+                            eqs={eqs}
+                            setEQ={handleEQChange}
+                        />
+                    </div>
+
+                    <DJDeck
+                        id={2}
+                        track={deckBTrack}
+                        isActive={crossfader > -0.5}
+                        onParameterChange={(p, v) => handleDeckParamChange(1, p, v)}
+                    />
+                </div>
+
+                 {/* Bottom Section: Drum Rack & AI Status */}
+                <div className="flex flex-col md:flex-row gap-6 p-4 md:px-6 md:pb-6">
+                    <div className="flex-1">
+                        <DrumRack pendingSample={pendingSample} onSampleAssigned={handleSampleAssigned} />
+                    </div>
+
+                    <div className="w-full md:w-80 bg-gray-800 p-4 rounded-lg border border-gray-700">
+                        <h3 className="text-gray-400 font-bold mb-3 uppercase text-xs tracking-wider">AI B2B Partner</h3>
+                        <div className="text-sm text-gray-300 space-y-2">
+                            <div className="flex justify-between">
+                                <span>Status</span>
+                                <span className={isB2BActive ? "text-green-400" : "text-gray-500"}>{isB2BActive ? "ACTIVE" : "STANDBY"}</span>
+                            </div>
+                            <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+                                <div className={`w-2/3 h-full ${isB2BActive ? "bg-purple-500 animate-pulse" : "bg-gray-600"}`}></div>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                                {isB2BActive ? "AI is listening and preparing next track..." : "Waiting for session start."}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* BATTLE VIEW */}
+            <div className={`h-full overflow-y-auto ${view === 'battle' ? 'block' : 'hidden'}`}>
+                {/* On mobile, BattleArena takes full screen */}
+                <div className="md:hidden h-full">
+                    <BattleArena />
+                </div>
+                {/* On desktop, BattleArena is in sidebar, so we just show decks here or empty state?
+                    Actually, let's keep the Studio view visible in Battle Mode on desktop so they can actually DJ!
+                    We just re-use the Studio layout but maybe with some indicators.
+                */}
+                <div className="hidden md:block h-full">
+                     <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-6 p-4 md:p-6">
                         <DJDeck
                             id={1}
                             track={deckATrack}
                             isActive={crossfader < 0.5}
                             onParameterChange={(p, v) => handleDeckParamChange(0, p, v)}
                         />
-
-                        {/* On Mobile, Mixer goes below decks usually, or between. Flex-col handles this naturally,
-                            but Mixer might need to be wider/different shape. For now, stacking is fine. */}
                         <div className="order-last md:order-none w-full md:w-auto flex justify-center">
                             <Mixer
                                 crossfader={crossfader}
@@ -203,7 +278,6 @@ function App() {
                                 setEQ={handleEQChange}
                             />
                         </div>
-
                         <DJDeck
                             id={2}
                             track={deckBTrack}
@@ -211,33 +285,20 @@ function App() {
                             onParameterChange={(p, v) => handleDeckParamChange(1, p, v)}
                         />
                     </div>
-
-                    {/* Bottom Section: Drum Rack & AI Status */}
-                    {/* Hide on mobile if battle view is active to save space? Or stack. */}
-                    <div className="flex flex-col md:flex-row gap-6 pb-20 md:pb-0">
-                        <div className="flex-1">
-                            <DrumRack pendingSample={pendingSample} onSampleAssigned={handleSampleAssigned} />
-                        </div>
-
-                        <div className="w-full md:w-80 bg-gray-800 p-4 rounded-lg border border-gray-700">
-                            <h3 className="text-gray-400 font-bold mb-3 uppercase text-xs tracking-wider">AI B2B Partner</h3>
-                            <div className="text-sm text-gray-300 space-y-2">
-                                <div className="flex justify-between">
-                                    <span>Status</span>
-                                    <span className={isB2BActive ? "text-green-400" : "text-gray-500"}>{isB2BActive ? "ACTIVE" : "STANDBY"}</span>
-                                </div>
-                                <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-                                    <div className={`w-2/3 h-full ${isB2BActive ? "bg-purple-500 animate-pulse" : "bg-gray-600"}`}></div>
-                                </div>
-                                <p className="text-xs text-gray-500">
-                                    {isB2BActive ? "AI is listening and preparing next track..." : "Waiting for session start."}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
-            )}
+            </div>
+
+            {/* ANALYTICS VIEW */}
+            <div className={`h-full overflow-y-auto ${view === 'analytics' ? 'block' : 'hidden'}`}>
+                <div className="h-full p-4 md:p-6">
+                    <AnalyticsDashboard />
+                </div>
+            </div>
+
         </div>
+
+        {/* Mobile Navigation Bar */}
+        <MobileNav activeTab={view} onTabChange={setView} />
 
       </div>
     </div>
