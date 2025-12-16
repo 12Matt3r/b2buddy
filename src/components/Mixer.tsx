@@ -19,30 +19,32 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, volumes, setVo
             {['high', 'mid', 'low'].map((band) => (
                 <div key={band} className="flex flex-col items-center">
                     <span className="text-xs uppercase text-gray-500 mb-1">{band}</span>
-                    <input
-                        type="range"
-                        min="-12"
-                        max="12"
-                        value={eqs[index][band as 'high'|'mid'|'low']}
-                        onChange={(e) => setEQ(index, band as 'high'|'mid'|'low', parseFloat(e.target.value))}
-                        className="h-24 w-2 bg-gray-700 rounded-lg appearance-none cursor-pointer vertical-range"
-                        style={{ writingMode: 'bt-lr', WebkitAppearance: 'slider-vertical' } as any}
-                    />
+                    <div className="h-24 w-8 flex items-center justify-center">
+                        <input
+                            type="range"
+                            min="-12"
+                            max="12"
+                            value={eqs[index][band as 'high'|'mid'|'low']}
+                            onChange={(e) => setEQ(index, band as 'high'|'mid'|'low', parseFloat(e.target.value))}
+                            className="w-24 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
+                        />
+                    </div>
                 </div>
             ))}
 
             {/* Volume Fader */}
             <div className="mt-4 flex flex-col items-center h-48 justify-end">
-                <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={volumes[index]}
-                    onChange={(e) => setVolume(index, parseFloat(e.target.value))}
-                    className="h-32 w-4 bg-gray-700 rounded-lg appearance-none cursor-pointer vertical-range"
-                    style={{ writingMode: 'bt-lr', WebkitAppearance: 'slider-vertical' } as any}
-                />
+                <div className="h-32 w-8 flex items-center justify-center">
+                    <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={volumes[index]}
+                        onChange={(e) => setVolume(index, parseFloat(e.target.value))}
+                        className="w-32 h-4 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
+                    />
+                </div>
                 <span className="text-xs mt-2">VOL</span>
             </div>
         </div>

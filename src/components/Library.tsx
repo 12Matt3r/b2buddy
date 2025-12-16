@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Track, Playlist } from '../types';
-import { Music, List, Upload, FolderPlus, Search, Grid } from 'lucide-react';
+import { Music, List, Upload, FolderPlus, Search, Grid, Plus } from 'lucide-react';
 
 interface LibraryProps {
     onLoadTrack: (track: Track, deckId: number) => void;
-    onLoadSample: (url: string, name: string) => void; // New prop for loading samples to drum rack
+    onLoadSample: (url: string, name: string) => void;
 }
 
 // Mock Data
@@ -30,6 +30,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
         { id: 'p1', name: 'Warmup Set', tracks: [MOCK_TRACKS[0], MOCK_TRACKS[2]] }
     ]);
     const [samples] = useState(MOCK_SAMPLES);
+    const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>('p1');
 
     const filteredTracks = tracks.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -39,8 +40,28 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     const handleCreatePlaylist = () => {
         const name = prompt('Enter playlist name:');
         if (name) {
-            setPlaylists([...playlists, { id: `p${Date.now()}`, name, tracks: [] }]);
+            const newId = `p${Date.now()}`;
+            setPlaylists([...playlists, { id: newId, name, tracks: [] }]);
+            setSelectedPlaylistId(newId);
         }
+    };
+
+    const handleAddToPlaylist = (track: Track) => {
+        if (!selectedPlaylistId) {
+            alert("Create or select a playlist first!");
+            setActiveTab('playlists');
+            return;
+        }
+
+        setPlaylists(playlists.map(p => {
+            if (p.id === selectedPlaylistId) {
+                // Prevent duplicates? For now allow.
+                return { ...p, tracks: [...p.tracks, track] };
+            }
+            return p;
+        }));
+        // Optional feedback
+        console.log(`Added ${track.title} to playlist`);
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,9 +72,9 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                 id: `local-${Date.now()}`,
                 title: file.name.replace(/\.[^/.]+$/, ""),
                 artist: 'Unknown',
-                bpm: 0, // Would need analysis
+                bpm: 0,
                 key: '-',
-                duration: 0, // Would need analysis
+                duration: 0,
                 url
             };
             setTracks([...tracks, newTrack]);
@@ -110,7 +131,16 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                         </div>
                         {filteredTracks.map(track => (
                             <div key={track.id} className="p-3 hover:bg-gray-700 border-b border-gray-700/50 group">
-                                <div className="font-medium text-sm text-gray-200">{track.title}</div>
+                                <div className="flex justify-between items-start">
+                                    <div className="font-medium text-sm text-gray-200">{track.title}</div>
+                                    <button
+                                        onClick={() => handleAddToPlaylist(track)}
+                                        className="text-gray-500 hover:text-purple-400"
+                                        title="Add to selected playlist"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                </div>
                                 <div className="text-xs text-gray-500 flex justify-between mt-1">
                                     <span>{track.artist}</span>
                                     <span>{track.bpm} BPM</span>
@@ -143,9 +173,29 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                             <FolderPlus size={16} /> New Playlist
                         </button>
                         {playlists.map(pl => (
-                            <div key={pl.id} className="p-3 mb-2 bg-gray-900 rounded border border-gray-700 hover:border-purple-500 cursor-pointer">
-                                <div className="font-bold text-sm">{pl.name}</div>
-                                <div className="text-xs text-gray-500">{pl.tracks.length} tracks</div>
+                            <div
+                                key={pl.id}
+                                onClick={() => setSelectedPlaylistId(pl.id)}
+                                className={`p-3 mb-2 bg-gray-900 rounded border cursor-pointer ${selectedPlaylistId === pl.id ? 'border-purple-500' : 'border-gray-700 hover:border-gray-500'}`}
+                            >
+                                <div className="font-bold text-sm flex justify-between">
+                                    {pl.name}
+                                    {selectedPlaylistId === pl.id && <span className="text-[10px] text-purple-400 bg-purple-900/30 px-1 rounded">ACTIVE</span>}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">{pl.tracks.length} tracks</div>
+                                {selectedPlaylistId === pl.id && pl.tracks.length > 0 && (
+                                    <div className="mt-2 pl-2 border-l-2 border-gray-700 space-y-1">
+                                        {pl.tracks.map((t, idx) => (
+                                            <div key={`${t.id}-${idx}`} className="text-xs text-gray-400 truncate flex justify-between group">
+                                                <span>{t.title}</span>
+                                                <div className="hidden group-hover:flex gap-1">
+                                                     <button onClick={(e) => { e.stopPropagation(); onLoadTrack(t, 0); }} className="hover:text-white">A</button>
+                                                     <button onClick={(e) => { e.stopPropagation(); onLoadTrack(t, 1); }} className="hover:text-white">B</button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
