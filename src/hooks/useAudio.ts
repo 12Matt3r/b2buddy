@@ -1,8 +1,9 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import * as Tone from 'tone';
 
 export const useAudio = (url: string | null) => {
     const player = useRef<Tone.Player | null>(null);
+    const analyser = useRef<Tone.Analyser | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState(0);
@@ -13,6 +14,11 @@ export const useAudio = (url: string | null) => {
 
         const loadAudio = async () => {
             setIsLoaded(false);
+
+            // Create Analyser
+            const newAnalyser = new Tone.Analyser('waveform', 256);
+            analyser.current = newAnalyser;
+
             const newPlayer = new Tone.Player({
                 url,
                 onload: () => {
@@ -20,7 +26,7 @@ export const useAudio = (url: string | null) => {
                     setDuration(newPlayer.buffer.duration);
                 },
                 autostart: false,
-            }).toDestination();
+            }).connect(newAnalyser).toDestination();
 
             player.current = newPlayer;
         };
@@ -29,6 +35,7 @@ export const useAudio = (url: string | null) => {
 
         return () => {
             player.current?.dispose();
+            analyser.current?.dispose();
         };
     }, [url]);
 
@@ -42,7 +49,7 @@ export const useAudio = (url: string | null) => {
 
     const pause = () => {
         if (player.current && isPlaying) {
-            player.current.stop(); // Tone.Player stop behaves like pause if we track time manually, but simplistically here
+            player.current.stop();
             setIsPlaying(false);
         }
     };
@@ -55,10 +62,17 @@ export const useAudio = (url: string | null) => {
 
     const setVolume = (volume: number) => {
         if (player.current) {
-            // Volume in Tone is db, we map 0-1 to reasonable db range
             player.current.volume.value = Tone.gainToDb(volume);
         }
     };
+
+    // New method to get real-time data
+    const getWaveformData = useCallback(() => {
+        if (analyser.current) {
+            return analyser.current.getValue();
+        }
+        return null;
+    }, []);
 
     return {
         isLoaded,
@@ -68,6 +82,7 @@ export const useAudio = (url: string | null) => {
         play,
         pause,
         setPlaybackRate,
-        setVolume
+        setVolume,
+        getWaveformData
     };
 };

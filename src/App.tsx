@@ -6,18 +6,16 @@ import Library from './components/Library';
 import DrumRack from './components/DrumRack';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import BattleArena from './components/BattleArena';
-import MobileNav from './components/MobileNav'; // Import the new component
+import MobileNav from './components/MobileNav';
 import { Track } from './types';
 import { aiService } from './services/AILearningService';
 import { aiB2BService, AIAction } from './services/AIB2BService';
 import { battleService } from './services/BattleService';
 import { useMIDI } from './hooks/useMIDI';
+import { useKeyboardControls } from './hooks/useKeyboardControls';
 
 function App() {
   // Navigation State
-  // We'll treat 'view' as the source of truth.
-  // On Desktop: 'studio', 'battle', 'analytics' are distinct main views. Library is always visible in Studio/Analytics unless in Battle.
-  // On Mobile: 'studio', 'library', 'battle', 'analytics' are mutually exclusive tabs.
   const [view, setView] = useState<'studio' | 'library' | 'battle' | 'analytics'>('studio');
 
   // App State
@@ -32,11 +30,23 @@ function App() {
     { high: 0, mid: 0, low: 0 }
   ]);
 
-  // State for Sample Assignment
   const [pendingSample, setPendingSample] = useState<{url: string, name: string} | null>(null);
 
   // Hooks
   const { lastMessage } = useMIDI();
+
+  // Handlers needed for Keyboard Hook
+  const handleCrossfaderChange = (val: number) => {
+    setCrossfader(Math.max(-1, Math.min(1, val))); // Clamp
+    aiService.logInteraction('fader', 'crossfader', val);
+  };
+
+  // Keyboard Controls
+  useKeyboardControls({
+      'ArrowLeft': () => handleCrossfaderChange(crossfader - 0.1),
+      'ArrowRight': () => handleCrossfaderChange(crossfader + 0.1),
+      'c': () => handleCrossfaderChange(0), // Reset center
+  });
 
   // B2B Logic Handler
   const handleAIAction = (action: AIAction) => {
@@ -49,7 +59,6 @@ function App() {
       }
   };
 
-  // Toggle B2B
   const toggleB2B = () => {
       if (isB2BActive) {
           aiB2BService.stopB2B();
@@ -60,10 +69,8 @@ function App() {
       }
   };
 
-  // Effects
   useEffect(() => {
     if (lastMessage) {
-       console.log("MIDI Input received:", lastMessage);
        if (lastMessage.data[0] === 176 && lastMessage.data[1] === 1) {
           const normalized = (lastMessage.data[2] / 127) * 2 - 1;
           handleCrossfaderChange(normalized);
@@ -71,7 +78,6 @@ function App() {
     }
   }, [lastMessage]);
 
-  // Handlers
   const handleLoadTrack = (track: Track, deckId: number) => {
     if (deckId === 0) {
         setDeckATrack(track);
@@ -97,11 +103,6 @@ function App() {
       aiService.logInteraction('play_pause', `deck_${deckId}_${param}`, value);
   };
 
-  const handleCrossfaderChange = (val: number) => {
-    setCrossfader(val);
-    aiService.logInteraction('fader', 'crossfader', val);
-  };
-
   const handleVolumeChange = (deckIndex: number, val: number) => {
     const newVols = [...volumes] as [number, number];
     newVols[deckIndex] = val;
@@ -118,11 +119,6 @@ function App() {
 
   return (
     <div className="h-screen bg-gray-900 text-white flex flex-col md:flex-row overflow-hidden font-sans">
-
-      {/*
-        DESKTOP LAYOUT
-        Sidebar is always visible on desktop unless in specific modes where it's replaced
-      */}
       <div className="hidden md:block h-full border-r border-gray-700">
           {view === 'battle' ? (
               <BattleArena />
@@ -131,10 +127,7 @@ function App() {
           )}
       </div>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full relative">
-
-        {/* Desktop Top Navigation Bar */}
         <div className="hidden md:flex h-16 bg-gray-800 border-b border-gray-700 justify-between items-center px-6 shrink-0 z-20">
           <div className="flex items-center gap-3">
              <div className="bg-purple-600 p-2 rounded-lg shadow-lg shadow-purple-900/50">
@@ -177,7 +170,6 @@ function App() {
           </button>
         </div>
 
-        {/* Mobile Header (simplified) */}
         <div className="md:hidden h-14 bg-gray-800 border-b border-gray-700 flex justify-between items-center px-4 shrink-0">
             <h1 className="text-lg font-bold">B2Buddy</h1>
              <button
@@ -188,16 +180,12 @@ function App() {
              </button>
         </div>
 
-        {/* Content View - Scrollable */}
         <div className="flex-1 overflow-hidden relative bg-gray-900 pb-16 md:pb-0">
-            {/* pb-16 on mobile to account for bottom nav */}
 
-            {/* MOBILE: LIBRARY VIEW */}
             <div className={`h-full ${view === 'library' ? 'block' : 'hidden md:hidden'}`}>
                 <Library onLoadTrack={handleLoadTrack} onLoadSample={handleLoadSample} />
             </div>
 
-            {/* STUDIO VIEW (Desktop & Mobile) */}
             <div className={`h-full overflow-y-auto ${view === 'studio' ? 'block' : 'hidden'}`}>
                 <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-6 p-4 md:p-6">
                     <DJDeck
@@ -226,7 +214,6 @@ function App() {
                     />
                 </div>
 
-                 {/* Bottom Section: Drum Rack & AI Status */}
                 <div className="flex flex-col md:flex-row gap-6 p-4 md:px-6 md:pb-6">
                     <div className="flex-1">
                         <DrumRack pendingSample={pendingSample} onSampleAssigned={handleSampleAssigned} />
@@ -250,16 +237,10 @@ function App() {
                 </div>
             </div>
 
-            {/* BATTLE VIEW */}
             <div className={`h-full overflow-y-auto ${view === 'battle' ? 'block' : 'hidden'}`}>
-                {/* On mobile, BattleArena takes full screen */}
                 <div className="md:hidden h-full">
                     <BattleArena />
                 </div>
-                {/* On desktop, BattleArena is in sidebar, so we just show decks here or empty state?
-                    Actually, let's keep the Studio view visible in Battle Mode on desktop so they can actually DJ!
-                    We just re-use the Studio layout but maybe with some indicators.
-                */}
                 <div className="hidden md:block h-full">
                      <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-6 p-4 md:p-6">
                         <DJDeck
@@ -288,7 +269,6 @@ function App() {
                 </div>
             </div>
 
-            {/* ANALYTICS VIEW */}
             <div className={`h-full overflow-y-auto ${view === 'analytics' ? 'block' : 'hidden'}`}>
                 <div className="h-full p-4 md:p-6">
                     <AnalyticsDashboard />
@@ -297,7 +277,6 @@ function App() {
 
         </div>
 
-        {/* Mobile Navigation Bar */}
         <MobileNav activeTab={view} onTabChange={setView} />
 
       </div>
