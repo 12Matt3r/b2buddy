@@ -38,3 +38,20 @@ export interface MixerState {
         low: number;
     };
 }
+
+export interface AIPersonality {
+    riskTolerance: number; // 0-100
+    energyManagement: number; // 0-100
+    genreExploration: number; // 0-100
+    crowdAdaptation: number; // 0-100
+    learningVelocity: number; // 0-100
+}
+
+export interface SessionAnalytics {
+    sessionId: string;
+    startTime: number;
+    duration: number;
+    interactions: number;
+    averageEnergy: number;
+    aiPersonalitySnapshot: AIPersonality;
+}
