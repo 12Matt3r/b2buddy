@@ -1,4 +1,5 @@
 import { AIPersonality } from '../types';
+import { processInteraction, getAnalytics } from '../api/ai-backend';
 
 export interface Interaction {
     type: 'fader' | 'eq' | 'load_track' | 'play_pause';
@@ -18,8 +19,18 @@ class AILearningService {
         learningVelocity: 10
     };
 
-    // Subscriptions
     private listeners: ((p: AIPersonality) => void)[] = [];
+
+    constructor() {
+        // Initial sync
+        this.syncWithBackend();
+    }
+
+    private async syncWithBackend() {
+        const data = await getAnalytics();
+        this.personality = data.personality;
+        this.notify();
+    }
 
     subscribe(callback: (p: AIPersonality) => void) {
         this.listeners.push(callback);
@@ -33,7 +44,7 @@ class AILearningService {
         this.listeners.forEach(l => l(this.personality));
     }
 
-    logInteraction(type: Interaction['type'], target: string, value: any) {
+    async logInteraction(type: Interaction['type'], target: string, value: any) {
         const interaction: Interaction = {
             type,
             target,
@@ -43,35 +54,15 @@ class AILearningService {
         this.interactions.push(interaction);
         console.debug('AI Log:', interaction);
 
-        // Update personality based on interaction
-        this.evolvePersonality(interaction);
-    }
-
-    private evolvePersonality(interaction: Interaction) {
-        // Simplified Logic mimicking the prompt
-        let changed = false;
-
-        // Example: Frequent Crossfader movement -> High Energy Management
-        if (interaction.type === 'fader' && interaction.target === 'crossfader') {
-            this.personality.energyManagement = Math.min(100, this.personality.energyManagement + 0.5);
-            changed = true;
-        }
-
-        // Example: Loading Tracks -> Exploration
-        if (interaction.type === 'load_track') {
-            this.personality.genreExploration = Math.min(100, this.personality.genreExploration + 1);
-            this.personality.riskTolerance = Math.min(100, this.personality.riskTolerance + 0.2);
-            changed = true;
-        }
-
-        // Example: EQ Usage -> Crowd Adaptation (Fine tuning)
-        if (interaction.type === 'eq') {
-            this.personality.crowdAdaptation = Math.min(100, this.personality.crowdAdaptation + 0.5);
-            changed = true;
-        }
-
-        if (changed) {
-            this.notify();
+        // Call Backend API
+        try {
+            const response = await processInteraction(interaction);
+            if (response.success) {
+                this.personality = response.personality;
+                this.notify();
+            }
+        } catch (e) {
+            console.error("Failed to sync interaction with backend", e);
         }
     }
 
