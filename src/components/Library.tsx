@@ -29,7 +29,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     const [playlists, setPlaylists] = useState<Playlist[]>([
         { id: 'p1', name: 'Warmup Set', tracks: [MOCK_TRACKS[0], MOCK_TRACKS[2]] }
     ]);
-    const [samples, setSamples] = useState(MOCK_SAMPLES);
+    const [samples] = useState(MOCK_SAMPLES);
 
     const filteredTracks = tracks.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

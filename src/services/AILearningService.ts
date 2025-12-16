@@ -1,8 +1,4 @@
-import { Interaction } from './AILearningService'; // Circular dep if I'm not careful, but AILearningService is where Interaction is defined?
-// Actually I will move Interaction to types or keep it here.
-// Let's redefine Interaction here or keep it simple.
-
-import { AIPersonality, Track } from '../types';
+import { AIPersonality } from '../types';
 
 export interface Interaction {
     type: 'fader' | 'eq' | 'load_track' | 'play_pause';

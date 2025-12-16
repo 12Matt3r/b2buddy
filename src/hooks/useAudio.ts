@@ -6,7 +6,7 @@ export const useAudio = (url: string | null) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState(0);
-    const [currentTime, setCurrentTime] = useState(0);
+    const [currentTime] = useState(0);
 
     useEffect(() => {
         if (!url) return;

@@ -1,4 +1,3 @@
-import { Track, AIPersonality } from '../types';
 import { aiService } from './AILearningService';
 
 // Mock AI Logic for B2B Partner
