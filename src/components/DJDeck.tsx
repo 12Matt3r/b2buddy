@@ -1,7 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Play, Pause, Disc } from 'lucide-react';
 import { Track } from '../types';
 import { useAudio } from '../hooks/useAudio';
+
+export interface DJDeckRef {
+    play: () => void;
+    pause: () => void;
+    togglePlay: () => void;
+}
 
 interface DJDeckProps {
     id: number;
@@ -11,11 +17,26 @@ interface DJDeckProps {
     onParameterChange: (param: string, value: any) => void;
 }
 
-const DJDeck: React.FC<DJDeckProps> = ({ id, track, isActive, onParameterChange }) => {
+const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, onParameterChange }, ref) => {
     const { isLoaded, isPlaying, play, pause, setPlaybackRate, getWaveformData } = useAudio(track?.url || null);
     const [pitch, setPitch] = React.useState(0);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animationRef = useRef<number>();
+
+    useImperativeHandle(ref, () => ({
+        play: () => {
+            if (isLoaded) play();
+        },
+        pause: () => {
+            if (isLoaded) pause();
+        },
+        togglePlay: () => {
+            if (isLoaded) {
+                if (isPlaying) pause();
+                else play();
+            }
+        }
+    }));
 
     useEffect(() => {
         onParameterChange('playing', isPlaying);
@@ -41,14 +62,13 @@ const DJDeck: React.FC<DJDeckProps> = ({ id, track, isActive, onParameterChange 
 
             // Draw Style
             ctx.lineWidth = 2;
-            ctx.strokeStyle = isActive ? '#a855f7' : '#6b7280'; // Purple if active, Gray if not
+            ctx.strokeStyle = isActive ? '#a855f7' : '#6b7280';
             ctx.beginPath();
 
             const sliceWidth = width * 1.0 / data.length;
             let x = 0;
 
             for (let i = 0; i < data.length; i++) {
-                // data[i] is between -1 and 1 usually for waveform
                 const v = (data[i] as number);
                 const y = (v * height / 2) + height / 2;
 
@@ -145,6 +165,6 @@ const DJDeck: React.FC<DJDeckProps> = ({ id, track, isActive, onParameterChange 
             </div>
         </div>
     );
-};
+});
 
 export default DJDeck;

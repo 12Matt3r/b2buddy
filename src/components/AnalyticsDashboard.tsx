@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { aiService } from '../services/AILearningService';
+import { predictionService } from '../services/PredictionService';
 import { AIPersonality } from '../types';
-import { BarChart2, Activity, Zap, Users, Brain } from 'lucide-react';
+import { BarChart2, Activity, Zap, Users, Brain, TrendingUp } from 'lucide-react';
 
 const AnalyticsDashboard: React.FC = () => {
     const [personality, setPersonality] = useState<AIPersonality>(aiService.getPersonality());
     const [stats, setStats] = useState(aiService.getSessionSummary());
+    const [prediction, setPrediction] = useState<number | null>(null);
 
     useEffect(() => {
         const unsub = aiService.subscribe((p) => {
@@ -13,6 +15,22 @@ const AnalyticsDashboard: React.FC = () => {
             setStats(aiService.getSessionSummary());
         });
         return unsub;
+    }, []);
+
+    useEffect(() => {
+        // Mock Training Data for Demo purposes
+        // In a real app, this would come from historical sessions
+        const mockHistory = [
+            { bpm: 120, energy: 0.5, duration: 300, nextBpm: 124 },
+            { bpm: 124, energy: 0.6, duration: 250, nextBpm: 128 },
+            { bpm: 128, energy: 0.8, duration: 400, nextBpm: 130 },
+            { bpm: 130, energy: 0.9, duration: 200, nextBpm: 125 },
+        ];
+
+        predictionService.trainOnHistory(mockHistory).then(() => {
+            const pred = predictionService.predictNextBPM(128, 0.7, 300);
+            setPrediction(pred);
+        });
     }, []);
 
     const TraitBar = ({ label, value, icon: Icon, color }: { label: string, value: number, icon: any, color: string }) => (
@@ -54,16 +72,13 @@ const AnalyticsDashboard: React.FC = () => {
                         <p className="text-sm text-gray-300">
                             Learning Velocity: <span className="text-green-400">{personality.learningVelocity}%</span>
                         </p>
-                        <p className="text-xs text-gray-500 mt-2">
-                            The AI is actively analyzing your transition patterns and EQ usage to adapt its future suggestions.
-                        </p>
                     </div>
                 </div>
 
                 {/* Session Stats */}
                 <div className="bg-gray-900 p-6 rounded-lg">
                     <h3 className="text-lg font-semibold mb-4 text-purple-400">Current Session</h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
                         <div className="bg-gray-800 p-4 rounded text-center">
                             <div className="text-3xl font-bold text-white">{stats.interactionCount}</div>
                             <div className="text-xs text-gray-500 uppercase mt-1">Interactions</div>
@@ -71,6 +86,18 @@ const AnalyticsDashboard: React.FC = () => {
                         <div className="bg-gray-800 p-4 rounded text-center">
                             <div className="text-3xl font-bold text-white">{Math.floor(stats.duration / 1000 / 60)}m</div>
                             <div className="text-xs text-gray-500 uppercase mt-1">Duration</div>
+                        </div>
+                    </div>
+
+                    {/* AI Prediction Widget */}
+                    <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-4 rounded border border-purple-500/30 mb-6">
+                        <div className="flex items-center gap-2 mb-2">
+                            <TrendingUp className="text-green-400" size={18} />
+                            <h4 className="font-bold text-sm text-gray-200">AI Predictive Insight</h4>
+                        </div>
+                        <div className="text-xs text-gray-400 mb-2">Based on your recent mix history, the AI predicts the optimal next track BPM:</div>
+                        <div className="text-2xl font-mono font-bold text-white">
+                            {prediction ? `${prediction} BPM` : 'Learning...'}
                         </div>
                     </div>
 
