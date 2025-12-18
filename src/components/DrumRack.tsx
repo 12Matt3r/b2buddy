@@ -65,7 +65,7 @@ const DrumRack: React.FC<DrumRackProps> = ({ pendingSample, onSampleAssigned, on
     const handlePadClick = (index: number) => {
         const pad = padConfig[index];
         if (pendingSample) {
-            const isVideo = pendingSample.url.startsWith('blob:'); // Simple check, or assume checking extension
+
             // Update pad config
             const newConfig = [...padConfig];
 

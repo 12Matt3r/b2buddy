@@ -96,7 +96,8 @@ class BattleService {
             bpm: 128,
             key: 'Cm',
             duration: 300,
-            url: ''
+            url: '',
+            type: 'audio'
         };
 
         const opponentScore = this.calculateScore(opponentPersonality, aiTrack, this.state.crowdReaction, this.state.round);

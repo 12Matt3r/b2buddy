@@ -20,6 +20,15 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
         const deckLabel = index < 2 ? 'DECK A' : 'DECK B';
         const typeLabel = isVideo ? 'VIDEO' : 'AUDIO';
 
+        // Dynamic labels for EQ knobs based on channel type
+        const getEqLabel = (band: string) => {
+            if (!isVideo) return band.toUpperCase(); // HIGH, MID, LOW
+            if (band === 'high') return 'CHROMA';
+            if (band === 'mid') return 'LUMA';
+            if (band === 'low') return 'OPAC';
+            return band;
+        };
+
         return (
             <div key={index} className="flex flex-col items-center gap-4 p-2 bg-gray-900 rounded-lg min-w-[60px]">
                 <div className="text-center mb-2">
@@ -27,14 +36,10 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                     <div className={`text-[10px] font-bold ${isVideo ? 'text-blue-400' : 'text-purple-400'}`}>{typeLabel}</div>
                 </div>
 
-                {/* EQs (Only for Audio channels usually, but maybe color correction for video later? For now, keep EQs for all or just audio?)
-                    User asked for "4 channel mixer". If we treat video as a signal, we can have "EQ"s be RGB?
-                    For MVP simplicity, let's render standard EQs for all, but maybe disable/hide for video to save space or re-purpose.
-                    Let's keep High/Mid/Low for all for consistency, maybe High=Brightness, Mid=Contrast?
-                    Let's just label them H/M/L.
-                */}
+                {/* EQs */}
                 {['high', 'mid', 'low'].map((band) => (
                     <div key={band} className="flex flex-col items-center">
+                        <span className="text-[9px] uppercase text-gray-500 mb-1">{getEqLabel(band)}</span>
                         <div className="h-16 w-6 flex items-center justify-center">
                             <input
                                 type="range"

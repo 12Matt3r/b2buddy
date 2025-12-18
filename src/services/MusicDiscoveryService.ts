@@ -2,12 +2,12 @@ import { Track, AIPersonality } from '../types';
 
 // Mock database of potential tracks
 const MUSIC_DATABASE: Track[] = [
-    { id: 'db_1', title: 'Cyber Pulse', artist: 'AI Bot', bpm: 130, key: 'F#', duration: 300, url: '/samples/industrial.mp3' },
-    { id: 'db_2', title: 'Neural Net', artist: 'Deep Mind', bpm: 126, key: 'Am', duration: 280, url: '/samples/deep.mp3' },
-    { id: 'db_3', title: 'Solar Flare', artist: 'Star System', bpm: 124, key: 'G', duration: 310, url: '/samples/sunset.mp3' },
-    { id: 'db_4', title: 'Acid Rain', artist: 'Techno Viking', bpm: 128, key: 'Am', duration: 345, url: '/samples/acid.mp3' },
-    { id: 'db_5', title: 'Void Walker', artist: 'Null Pointer', bpm: 140, key: 'Dm', duration: 290, url: '/samples/industrial.mp3' },
-    { id: 'db_6', title: 'Soft Clouds', artist: 'Sky High', bpm: 120, key: 'C', duration: 250, url: '/samples/deep.mp3' },
+    { id: 'db_1', title: 'Cyber Pulse', artist: 'AI Bot', bpm: 130, key: 'F#', duration: 300, url: '/samples/industrial.mp3', type: 'audio' },
+    { id: 'db_2', title: 'Neural Net', artist: 'Deep Mind', bpm: 126, key: 'Am', duration: 280, url: '/samples/deep.mp3', type: 'audio' },
+    { id: 'db_3', title: 'Solar Flare', artist: 'Star System', bpm: 124, key: 'G', duration: 310, url: '/samples/sunset.mp3', type: 'audio' },
+    { id: 'db_4', title: 'Acid Rain', artist: 'Techno Viking', bpm: 128, key: 'Am', duration: 345, url: '/samples/acid.mp3', type: 'audio' },
+    { id: 'db_5', title: 'Void Walker', artist: 'Null Pointer', bpm: 140, key: 'Dm', duration: 290, url: '/samples/industrial.mp3', type: 'audio' },
+    { id: 'db_6', title: 'Soft Clouds', artist: 'Sky High', bpm: 120, key: 'C', duration: 250, url: '/samples/deep.mp3', type: 'audio' },
 ];
 
 export const generateMusicRecommendations = (
