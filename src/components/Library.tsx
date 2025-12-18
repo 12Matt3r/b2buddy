@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Track, Playlist } from '../types';
-import { Music, List, Upload, FolderPlus, Search, Grid, Plus, Loader2, Video } from 'lucide-react';
+import { Music, List, Upload, FolderPlus, Search, Grid, Plus, Loader2, Video, ListVideo } from 'lucide-react';
 
 interface LibraryProps {
     onLoadTrack: (track: Track, deckId: number) => void;
@@ -23,7 +23,7 @@ const MOCK_SAMPLES = [
 ];
 
 const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
-    const [activeTab, setActiveTab] = useState<'tracks' | 'playlists' | 'samples'>('tracks');
+    const [activeTab, setActiveTab] = useState<'tracks' | 'playlists' | 'samples' | 'queue'>('tracks');
     const [searchQuery, setSearchQuery] = useState('');
     const [tracks, setTracks] = useState<Track[]>(MOCK_TRACKS);
     const [playlists, setPlaylists] = useState<Playlist[]>([
@@ -32,6 +32,9 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     const [samples] = useState(MOCK_SAMPLES);
     const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>('p1');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    // VJ Queue State
+    const [vjQueue, setVjQueue] = useState<Track[]>([]);
 
     const filteredTracks = tracks.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -61,6 +64,16 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
             }
             return p;
         }));
+    };
+
+    const handleAddToQueue = (track: Track) => {
+        setVjQueue([...vjQueue, track]);
+    };
+
+    const handleRemoveFromQueue = (index: number) => {
+        const newQueue = [...vjQueue];
+        newQueue.splice(index, 1);
+        setVjQueue(newQueue);
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +129,12 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                     <List size={16} />
                 </button>
                 <button
+                    onClick={() => setActiveTab('queue')}
+                    className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'queue' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
+                >
+                    <ListVideo size={16} />
+                </button>
+                <button
                     onClick={() => setActiveTab('samples')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'samples' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
                 >
@@ -155,13 +174,22 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                         {track.type === 'video' ? <Video size={14} className="text-blue-400" /> : <Music size={14} className="text-gray-500" />}
                                         {track.title}
                                     </div>
-                                    <button
-                                        onClick={() => handleAddToPlaylist(track)}
-                                        className="text-gray-500 hover:text-purple-400"
-                                        title="Add to selected playlist"
-                                    >
-                                        <Plus size={14} />
-                                    </button>
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={() => handleAddToQueue(track)}
+                                            className="text-gray-500 hover:text-blue-400"
+                                            title="Add to VJ Queue"
+                                        >
+                                            <ListVideo size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleAddToPlaylist(track)}
+                                            className="text-gray-500 hover:text-purple-400"
+                                            title="Add to selected playlist"
+                                        >
+                                            <Plus size={14} />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="text-xs text-gray-500 flex justify-between mt-1">
                                     <span>{track.artist}</span>
@@ -218,6 +246,28 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                         ))}
                                     </div>
                                 )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {activeTab === 'queue' && (
+                    <div className="p-2">
+                        <div className="text-xs text-gray-400 mb-2 uppercase font-bold tracking-wider">VJ Queue</div>
+                        {vjQueue.length === 0 && <div className="text-xs text-gray-600 italic text-center p-4">Queue is empty</div>}
+                        {vjQueue.map((track, idx) => (
+                            <div key={`${track.id}-queue-${idx}`} className="p-2 mb-2 bg-gray-900 rounded border border-gray-700 flex justify-between items-center group">
+                                <div className="overflow-hidden">
+                                    <div className="text-sm font-medium truncate">{track.title}</div>
+                                    <div className="text-xs text-gray-500">{track.type.toUpperCase()}</div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                         <button onClick={() => onLoadTrack(track, 0)} className="text-xs bg-purple-600 px-2 py-1 rounded">A</button>
+                                         <button onClick={() => onLoadTrack(track, 1)} className="text-xs bg-purple-600 px-2 py-1 rounded">B</button>
+                                    </div>
+                                    <button onClick={() => handleRemoveFromQueue(idx)} className="text-gray-500 hover:text-red-400">×</button>
+                                </div>
                             </div>
                         ))}
                     </div>

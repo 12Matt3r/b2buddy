@@ -38,6 +38,7 @@ function App() {
 
   const [pendingSample, setPendingSample] = useState<{url: string, name: string} | null>(null);
   const [activeDrumVideo, setActiveDrumVideo] = useState<string | null>(null);
+  const [activeVJEFFECT, setActiveVJEFFECT] = useState<'datamosh' | 'pixelsort' | 'feedback' | 'colorshift' | 'none'>('none');
 
   const { lastMessage } = useMIDI();
 
@@ -45,18 +46,11 @@ function App() {
   // Calculates the effective volume for a deck based on its Channel Fader AND Crossfader
   const calculateEffectiveVolume = (channelIndex: number, isDeckB: boolean) => {
       const channelVol = channels[channelIndex].volume;
-
-      // Crossfader Logic: -1 (Left/A) to 1 (Right/B)
-      // If Crossfader is -1, Deck A is 100%, Deck B is 0%
-      // If Crossfader is 0, Both are 100% (or -3dB dip depending on curve, usually linear or power)
-      // Simple Linear Crossfade for MVP:
       let crossfaderGain = 1;
 
       if (!isDeckB) { // Deck A
-          // 1 when crossfader <= 0, fades to 0 as crossfader -> 1
           crossfaderGain = crossfader <= 0 ? 1 : 1 - crossfader;
       } else { // Deck B
-          // 1 when crossfader >= 0, fades to 0 as crossfader -> -1
           crossfaderGain = crossfader >= 0 ? 1 : 1 + crossfader;
       }
 
@@ -114,6 +108,12 @@ function App() {
       setActiveDrumVideo(url);
   };
 
+  const toggleVJEffect = () => {
+      const effects = ['none', 'datamosh', 'pixelsort', 'feedback', 'colorshift'] as const;
+      const next = effects[(effects.indexOf(activeVJEFFECT) + 1) % effects.length];
+      setActiveVJEFFECT(next);
+  };
+
   // --- Controls ---
 
   useKeyboardControls({
@@ -167,11 +167,13 @@ function App() {
   return (
     <div className="h-screen bg-gray-900 text-white flex flex-col md:flex-row overflow-hidden font-sans relative">
 
+      {/* Master Video Output Background */}
       <MasterVideoOutput
           channels={channels}
           deckAVideo={deckATrack?.videoUrl}
           deckBVideo={deckBTrack?.videoUrl}
           drumVideoClip={activeDrumVideo}
+          activeEffect={activeVJEFFECT}
       />
 
       <div className="hidden md:block h-full border-r border-gray-700 bg-gray-900/90 backdrop-blur-md relative z-10">
@@ -203,6 +205,12 @@ function App() {
           </div>
 
           <div className="flex items-center gap-2">
+              <button
+                onClick={toggleVJEffect}
+                className="bg-black/50 hover:bg-purple-900/80 text-white text-xs px-2 py-1 rounded border border-purple-500 backdrop-blur-md"
+              >
+                  FX: {activeVJEFFECT.toUpperCase()}
+              </button>
               <button
                 onClick={toggleListening}
                 className={`p-2 rounded-full transition-all relative ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-700 text-gray-300 hover:text-white'}`}
