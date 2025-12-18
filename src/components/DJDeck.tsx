@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import ReactPlayer from 'react-player';
 import { Play, Pause, Disc, Video } from 'lucide-react';
 import { Track } from '../types';
 import { useAudio } from '../hooks/useAudio';
@@ -19,45 +20,57 @@ interface DJDeckProps {
 }
 
 const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume, onParameterChange }, ref) => {
+    const isYoutubeTrack = !!track?.audioUrl;
+    const { isLoaded, isPlaying, play: playAudio, pause: pauseAudio, setPlaybackRate, setVolume, getWaveformData } = useAudio(!isYoutubeTrack ? (track?.url || null) : null);
 
-    const isVideo = track?.type === 'video';
-    // Destructure setVolume from useAudio
-    const { isLoaded, isPlaying, play: playAudio, pause: pauseAudio, setPlaybackRate, setVolume, getWaveformData } = useAudio(!isVideo ? (track?.url || null) : null);
-
+    const [playing, setPlaying] = useState(false);
     const [pitch, setPitch] = useState(0);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const animationRef = useRef<number>();
 
+    const isVideo = !isYoutubeTrack && track?.type === 'video';
     const [videoPlaying, setVideoPlaying] = useState(false);
 
-    const isDeckPlaying = isVideo ? videoPlaying : isPlaying;
-    const isDeckLoaded = isVideo ? !!track?.videoUrl : isLoaded;
+    const isDeckPlaying = isYoutubeTrack ? playing : (isVideo ? videoPlaying : isPlaying);
+    const isDeckLoaded = isYoutubeTrack ? !!track?.audioUrl : (isVideo ? !!track?.videoUrl : isLoaded);
 
     useImperativeHandle(ref, () => ({
         play: () => {
-            if (isDeckLoaded) handlePlay();
+            if (isDeckLoaded) {
+                if (isYoutubeTrack) setPlaying(true);
+                else if (isVideo) setVideoPlaying(true);
+                else playAudio();
+            }
         },
         pause: () => {
-            if (isDeckLoaded) handlePause();
+            if (isDeckLoaded) {
+                if (isYoutubeTrack) setPlaying(false);
+                else if (isVideo) setVideoPlaying(false);
+                else pauseAudio();
+            }
         },
         togglePlay: () => {
-            if (isDeckLoaded) handlePlayToggle();
+            if (isDeckLoaded) {
+                if (isYoutubeTrack) setPlaying(!playing);
+                else if (isVideo) setVideoPlaying(!videoPlaying);
+                else (isPlaying ? pauseAudio() : playAudio());
+            }
         }
     }));
 
-    // Update Volume when prop changes
     useEffect(() => {
-        if (!isVideo) {
+        if (!isYoutubeTrack) {
             setVolume(volume);
         } else if (videoRef.current) {
             videoRef.current.volume = volume;
         }
-    }, [volume, isVideo, setVolume]);
+    }, [volume, isYoutubeTrack, setVolume, isVideo]);
 
     useEffect(() => {
         onParameterChange('playing', isDeckPlaying);
     }, [isDeckPlaying, onParameterChange]);
+
 
     // Video Playback Logic
     useEffect(() => {
@@ -88,20 +101,18 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
 
             ctx.clearRect(0, 0, width, height);
 
-            if (isVideo) {
+            if (isYoutubeTrack || isVideo) {
                 ctx.fillStyle = "#333";
                 ctx.font = "10px sans-serif";
-                ctx.fillText("VIDEO TRACK", 10, height/2);
+                ctx.fillText(isYoutubeTrack ? "YOUTUBE TRACK" : "VIDEO TRACK", 10, height / 2);
             } else {
                 const data = getWaveformData();
                 if (data) {
                     ctx.lineWidth = 2;
                     ctx.strokeStyle = isActive ? '#a855f7' : '#6b7280';
                     ctx.beginPath();
-
                     const sliceWidth = width * 1.0 / data.length;
                     let x = 0;
-
                     for (let i = 0; i < data.length; i++) {
                         const v = (data[i] as number);
                         const y = (v * height / 2) + height / 2;
@@ -125,46 +136,64 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, [isDeckPlaying, getWaveformData, isActive, isVideo]);
-
-    const handlePlay = () => {
-        if (isVideo) setVideoPlaying(true);
-        else playAudio();
-    };
-
-    const handlePause = () => {
-        if (isVideo) setVideoPlaying(false);
-        else pauseAudio();
-    };
+    }, [isDeckPlaying, getWaveformData, isActive, isYoutubeTrack]);
 
     const handlePlayToggle = () => {
-        if (isDeckPlaying) handlePause();
-        else handlePlay();
+        if (isYoutubeTrack) {
+            setPlaying(!playing);
+        } else if (isVideo) {
+            setVideoPlaying(!videoPlaying);
+        } else {
+            if (isPlaying) pauseAudio();
+            else playAudio();
+        }
     };
 
     const handlePitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = parseFloat(e.target.value);
         setPitch(val);
         const rate = 1 + (val / 100) * 0.08;
-        if (!isVideo) setPlaybackRate(rate);
+        if (!isYoutubeTrack && !isVideo) setPlaybackRate(rate);
         onParameterChange('pitch', val);
     };
 
     return (
         <div className={`bg-gray-800 p-4 rounded-lg border-2 ${isActive ? 'border-purple-500' : 'border-gray-700'} w-full max-w-md shadow-xl relative overflow-hidden`}>
-            {/* Background Video Layer */}
-            {isVideo && track?.videoUrl && (
-                <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
-                    <video
-                        ref={videoRef}
-                        src={track.videoUrl}
-                        loop
-                        // Removed muted attribute to allow audio
-                        className="w-full h-full object-cover"
-                    />
-                </div>
+            {isYoutubeTrack ? (
+                <>
+                    <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
+                        <ReactPlayer
+                            url={track?.videoUrl}
+                            playing={playing}
+                            volume={0}
+                            muted
+                            width="100%"
+                            height="100%"
+                            playbackRate={1 + (pitch / 100) * 0.08}
+                        />
+                    </div>
+                    <div style={{ display: 'none' }}>
+                        <ReactPlayer
+                            url={track?.audioUrl}
+                            playing={playing}
+                            volume={volume}
+                            width="100%"
+                            height="100%"
+                            playbackRate={1 + (pitch / 100) * 0.08}
+                        />
+                    </div>
+                </>
+            ) : (
+                track?.type === 'video' && track.videoUrl && (
+                    <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
+                        <video
+                            src={track.videoUrl}
+                            loop
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                )
             )}
-
             <div className="relative z-10">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-gray-300">Deck {id}</h2>
@@ -176,7 +205,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                 {/* Visualizer Area */}
                 <div className="relative mb-6">
                     <div className={`w-48 h-48 mx-auto rounded-full border-4 border-gray-600 flex items-center justify-center relative overflow-hidden ${isDeckPlaying ? 'animate-spin-slow' : ''}`}>
-                        {isVideo ? <Video size={80} className="text-blue-500" /> : <Disc size={120} className="text-gray-500" />}
+                        {track?.type === 'video' || isYoutubeTrack ? <Video size={80} className="text-blue-500" /> : <Disc size={120} className="text-gray-500" />}
                     </div>
                     {/* Overlay Waveform Canvas */}
                     <canvas
@@ -185,6 +214,19 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         height={60}
                         className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-black/50 rounded backdrop-blur-sm"
                     />
+                </div>
+
+                <div className="w-full h-32 bg-black rounded-lg mb-4">
+                    {(isYoutubeTrack || isVideo) && track?.videoUrl && (
+                        <ReactPlayer
+                            url={track.videoUrl}
+                            playing={isDeckPlaying}
+                            volume={0}
+                            muted
+                            width="100%"
+                            height="100%"
+                        />
+                    )}
                 </div>
 
                 {/* Controls */}

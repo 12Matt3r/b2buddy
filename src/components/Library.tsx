@@ -32,6 +32,9 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     const [samples] = useState(MOCK_SAMPLES);
     const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>('p1');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [videoUrl, setVideoUrl] = useState('');
+    const [audioUrl, setAudioUrl] = useState('');
+    const [youtubeTitle, setYoutubeTitle] = useState('');
 
     // VJ Queue State
     const [vjQueue, setVjQueue] = useState<Track[]>([]);
@@ -47,6 +50,27 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
             const newId = `p${Date.now()}`;
             setPlaylists([...playlists, { id: newId, name, tracks: [] }]);
             setSelectedPlaylistId(newId);
+        }
+    };
+
+    const handleLoadYouTubeTrack = () => {
+        if (videoUrl && audioUrl && youtubeTitle) {
+            const newTrack: Track = {
+                id: `youtube-${Date.now()}`,
+                title: youtubeTitle,
+                artist: 'YouTube',
+                bpm: 120,
+                key: 'C',
+                duration: 0,
+                url: '',
+                audioUrl,
+                videoUrl,
+                type: 'video',
+            };
+            setTracks([...tracks, newTrack]);
+            setVideoUrl('');
+            setAudioUrl('');
+            setYoutubeTitle('');
         }
     };
 
@@ -160,6 +184,38 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
             <div className="flex-1 overflow-y-auto">
                 {activeTab === 'tracks' && (
                     <div>
+                        <div className="p-2">
+                            <div className="bg-gray-700 p-2 rounded-lg">
+                                <h3 className="text-xs text-gray-400 font-bold mb-2">Load from YouTube</h3>
+                                <input
+                                    type="text"
+                                    placeholder="Visual URL"
+                                    value={videoUrl}
+                                    onChange={(e) => setVideoUrl(e.target.value)}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded-md py-1 px-2 text-sm mb-2"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Song URL"
+                                    value={audioUrl}
+                                    onChange={(e) => setAudioUrl(e.target.value)}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded-md py-1 px-2 text-sm mb-2"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Title"
+                                    value={youtubeTitle}
+                                    onChange={(e) => setYoutubeTitle(e.target.value)}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded-md py-1 px-2 text-sm mb-2"
+                                />
+                                <button
+                                    onClick={handleLoadYouTubeTrack}
+                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-2 rounded text-sm"
+                                >
+                                    Load YouTube Track
+                                </button>
+                            </div>
+                        </div>
                         <div className="p-2">
                              <label className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm mb-2 transition-colors ${isAnalyzing ? 'bg-gray-700 text-gray-400 cursor-wait' : 'bg-purple-900/40 text-purple-200 hover:bg-purple-900/60'}`}>
                                 {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}

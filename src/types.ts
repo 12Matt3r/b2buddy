@@ -6,6 +6,7 @@ export interface Track {
     key: string;
     duration: number;
     url: string; // URL to audio file
+    audioUrl?: string;
     videoUrl?: string; // URL to video file (if VJ track)
     type: 'audio' | 'video';
 }
