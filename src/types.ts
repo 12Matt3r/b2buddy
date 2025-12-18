@@ -6,6 +6,8 @@ export interface Track {
     key: string;
     duration: number;
     url: string; // URL to audio file
+    videoUrl?: string; // URL to video file (if VJ track)
+    type: 'audio' | 'video';
 }
 
 export interface Playlist {
@@ -25,18 +27,19 @@ export interface DeckState {
 
 export interface MixerState {
     crossfader: number; // -1 to 1
-    channel1: {
-        volume: number;
-        high: number;
-        mid: number;
-        low: number;
-    };
-    channel2: {
-        volume: number;
-        high: number;
-        mid: number;
-        low: number;
-    };
+    // AV Mixer Expansion: 4 Channels
+    // Ch 1: Deck A Audio
+    // Ch 2: Deck A Video
+    // Ch 3: Deck B Audio
+    // Ch 4: Deck B Video
+    channels: [ChannelState, ChannelState, ChannelState, ChannelState];
+}
+
+export interface ChannelState {
+    volume: number; // 0-1 (Audio Vol or Video Opacity)
+    high: number;
+    mid: number;
+    low: number;
 }
 
 export interface AIPersonality {

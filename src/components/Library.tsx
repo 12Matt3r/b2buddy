@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Track, Playlist } from '../types';
-import { Music, List, Upload, FolderPlus, Search, Grid, Plus, Loader2 } from 'lucide-react';
+import { Music, List, Upload, FolderPlus, Search, Grid, Plus, Loader2, Video } from 'lucide-react';
 
 interface LibraryProps {
     onLoadTrack: (track: Track, deckId: number) => void;
@@ -9,10 +9,10 @@ interface LibraryProps {
 
 // Mock Data
 const MOCK_TRACKS: Track[] = [
-    { id: '1', title: 'Acid Rain', artist: 'Techno Viking', bpm: 128, key: 'Am', duration: 345, url: '/samples/acid.mp3' },
-    { id: '2', title: 'Deep Ocean', artist: 'Aqua Flow', bpm: 122, key: 'Cm', duration: 280, url: '/samples/deep.mp3' },
-    { id: '3', title: 'Sunset Groove', artist: 'Solar Rhythms', bpm: 124, key: 'G', duration: 310, url: '/samples/sunset.mp3' },
-    { id: '4', title: 'Industrial Hammer', artist: 'Factory Floor', bpm: 135, key: 'Dm', duration: 290, url: '/samples/industrial.mp3' },
+    { id: '1', title: 'Acid Rain', artist: 'Techno Viking', bpm: 128, key: 'Am', duration: 345, url: '/samples/acid.mp3', type: 'audio' },
+    { id: '2', title: 'Deep Ocean', artist: 'Aqua Flow', bpm: 122, key: 'Cm', duration: 280, url: '/samples/deep.mp3', type: 'audio' },
+    { id: '3', title: 'Sunset Groove', artist: 'Solar Rhythms', bpm: 124, key: 'G', duration: 310, url: '/samples/sunset.mp3', type: 'audio' },
+    { id: '4', title: 'Industrial Hammer', artist: 'Factory Floor', bpm: 135, key: 'Dm', duration: 290, url: '/samples/industrial.mp3', type: 'audio' },
 ];
 
 const MOCK_SAMPLES = [
@@ -79,14 +79,18 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                 const keys = ['Am', 'C', 'G', 'Dm', 'F', 'Em'];
                 const mockKey = keys[Math.floor(Math.random() * keys.length)];
 
+                const isVideo = file.type.startsWith('video');
+
                 const newTrack: Track = {
                     id: `local-${Date.now()}`,
                     title: file.name.replace(/\.[^/.]+$/, ""),
-                    artist: 'Local Artist', // Default since file object doesn't have metadata easily without parsing
+                    artist: 'Local Artist',
                     bpm: mockBpm,
                     key: mockKey,
-                    duration: 300, // Mock duration
-                    url
+                    duration: 300,
+                    url,
+                    type: isVideo ? 'video' : 'audio',
+                    videoUrl: isVideo ? url : undefined
                 };
 
                 setTracks([...tracks, newTrack]);
@@ -140,14 +144,17 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                         <div className="p-2">
                              <label className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm mb-2 transition-colors ${isAnalyzing ? 'bg-gray-700 text-gray-400 cursor-wait' : 'bg-purple-900/40 text-purple-200 hover:bg-purple-900/60'}`}>
                                 {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                                {isAnalyzing ? 'Analyzing Audio...' : 'Import Track'}
-                                <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" disabled={isAnalyzing} />
+                                {isAnalyzing ? 'Analyzing Media...' : 'Import Media (Audio/Video)'}
+                                <input type="file" accept="audio/*,video/*" onChange={handleFileUpload} className="hidden" disabled={isAnalyzing} />
                             </label>
                         </div>
                         {filteredTracks.map(track => (
                             <div key={track.id} className="p-3 hover:bg-gray-700 border-b border-gray-700/50 group">
                                 <div className="flex justify-between items-start">
-                                    <div className="font-medium text-sm text-gray-200">{track.title}</div>
+                                    <div className="font-medium text-sm text-gray-200 flex items-center gap-2">
+                                        {track.type === 'video' ? <Video size={14} className="text-blue-400" /> : <Music size={14} className="text-gray-500" />}
+                                        {track.title}
+                                    </div>
                                     <button
                                         onClick={() => handleAddToPlaylist(track)}
                                         className="text-gray-500 hover:text-purple-400"

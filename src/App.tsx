@@ -7,7 +7,8 @@ import DrumRack from './components/DrumRack';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import BattleArena from './components/BattleArena';
 import MobileNav from './components/MobileNav';
-import { Track } from './types';
+import MasterVideoOutput from './components/MasterVideoOutput';
+import { Track, ChannelState } from './types';
 import { aiService } from './services/AILearningService';
 import { aiB2BService, AIAction } from './services/AIB2BService';
 import { battleService } from './services/BattleService';
@@ -23,21 +24,63 @@ function App() {
   const [deckATrack, setDeckATrack] = useState<Track | null>(null);
   const [deckBTrack, setDeckBTrack] = useState<Track | null>(null);
   const [isB2BActive, setIsB2BActive] = useState(false);
+
+  // Mixer State
   const [crossfader, setCrossfader] = useState(0);
-  const [volumes, setVolumes] = useState<[number, number]>([1, 1]);
-  const [eqs, setEQs] = useState<[{high: number, mid: number, low: number}, {high: number, mid: number, low: number}]>([
-    { high: 0, mid: 0, low: 0 },
-    { high: 0, mid: 0, low: 0 }
+
+  // 4 Channel State: A Audio, A Video, B Audio, B Video
+  const [channels, setChannels] = useState<[ChannelState, ChannelState, ChannelState, ChannelState]>([
+      { volume: 1, high: 0, mid: 0, low: 0 }, // Ch1: Deck A Audio
+      { volume: 1, high: 0, mid: 0, low: 0 }, // Ch2: Deck A Video (Opacity)
+      { volume: 1, high: 0, mid: 0, low: 0 }, // Ch3: Deck B Audio
+      { volume: 1, high: 0, mid: 0, low: 0 }, // Ch4: Deck B Video (Opacity)
   ]);
+
   const [pendingSample, setPendingSample] = useState<{url: string, name: string} | null>(null);
+  const [activeDrumVideo, setActiveDrumVideo] = useState<string | null>(null);
 
   const { lastMessage } = useMIDI();
+
+  // --- Volume Calculation ---
+  // Calculates the effective volume for a deck based on its Channel Fader AND Crossfader
+  const calculateEffectiveVolume = (channelIndex: number, isDeckB: boolean) => {
+      const channelVol = channels[channelIndex].volume;
+
+      // Crossfader Logic: -1 (Left/A) to 1 (Right/B)
+      // If Crossfader is -1, Deck A is 100%, Deck B is 0%
+      // If Crossfader is 0, Both are 100% (or -3dB dip depending on curve, usually linear or power)
+      // Simple Linear Crossfade for MVP:
+      let crossfaderGain = 1;
+
+      if (!isDeckB) { // Deck A
+          // 1 when crossfader <= 0, fades to 0 as crossfader -> 1
+          crossfaderGain = crossfader <= 0 ? 1 : 1 - crossfader;
+      } else { // Deck B
+          // 1 when crossfader >= 0, fades to 0 as crossfader -> -1
+          crossfaderGain = crossfader >= 0 ? 1 : 1 + crossfader;
+      }
+
+      return channelVol * crossfaderGain;
+  };
+
+  const deckAVolume = calculateEffectiveVolume(0, false);
+  const deckBVolume = calculateEffectiveVolume(2, true);
 
   // --- Handlers ---
 
   const handleCrossfaderChange = (val: number) => {
     setCrossfader(Math.max(-1, Math.min(1, val)));
     aiService.logInteraction('fader', 'crossfader', val);
+  };
+
+  const handleChannelStateChange = (index: number, newState: Partial<ChannelState>) => {
+      const newChannels = [...channels] as [ChannelState, ChannelState, ChannelState, ChannelState];
+      newChannels[index] = { ...newChannels[index], ...newState };
+      setChannels(newChannels);
+
+      if (newState.volume !== undefined) {
+          aiService.logInteraction('fader', `ch_${index}_vol`, newState.volume);
+      }
   };
 
   const toggleDeckPlay = (deckId: number) => {
@@ -67,6 +110,10 @@ function App() {
       }
   };
 
+  const handleTriggerDrumVideo = (url: string) => {
+      setActiveDrumVideo(url);
+  };
+
   // --- Controls ---
 
   useKeyboardControls({
@@ -79,13 +126,9 @@ function App() {
 
   const { isListening, toggleListening, lastTranscript } = useVoiceControl({
       'play deck one': () => toggleDeckPlay(0),
-      'play deck 1': () => toggleDeckPlay(0),
       'stop deck one': () => toggleDeckPlay(0),
-      'stop deck 1': () => toggleDeckPlay(0),
       'play deck two': () => toggleDeckPlay(1),
-      'play deck 2': () => toggleDeckPlay(1),
       'stop deck two': () => toggleDeckPlay(1),
-      'stop deck 2': () => toggleDeckPlay(1),
       'crossfade left': () => handleCrossfaderChange(-1),
       'crossfade right': () => handleCrossfaderChange(1),
       'center': () => handleCrossfaderChange(0),
@@ -120,22 +163,18 @@ function App() {
   const handleLoadSample = (url: string, name: string) => { setPendingSample({ url, name }); };
   const handleSampleAssigned = () => { setPendingSample(null); };
   const handleDeckParamChange = (deckId: number, param: string, value: any) => { aiService.logInteraction('play_pause', `deck_${deckId}_${param}`, value); };
-  const handleVolumeChange = (deckIndex: number, val: number) => {
-    const newVols = [...volumes] as [number, number];
-    newVols[deckIndex] = val;
-    setVolumes(newVols);
-    aiService.logInteraction('fader', `vol_ch${deckIndex}`, val);
-  };
-  const handleEQChange = (deckIndex: number, band: 'high' | 'mid' | 'low', val: number) => {
-    const newEQs = [...eqs] as typeof eqs;
-    newEQs[deckIndex] = { ...newEQs[deckIndex], [band]: val };
-    setEQs(newEQs);
-    aiService.logInteraction('eq', `eq_ch${deckIndex}_${band}`, val);
-  };
 
   return (
-    <div className="h-screen bg-gray-900 text-white flex flex-col md:flex-row overflow-hidden font-sans">
-      <div className="hidden md:block h-full border-r border-gray-700">
+    <div className="h-screen bg-gray-900 text-white flex flex-col md:flex-row overflow-hidden font-sans relative">
+
+      <MasterVideoOutput
+          channels={channels}
+          deckAVideo={deckATrack?.videoUrl}
+          deckBVideo={deckBTrack?.videoUrl}
+          drumVideoClip={activeDrumVideo}
+      />
+
+      <div className="hidden md:block h-full border-r border-gray-700 bg-gray-900/90 backdrop-blur-md relative z-10">
           {view === 'battle' ? (
               <BattleArena />
           ) : (
@@ -143,8 +182,8 @@ function App() {
           )}
       </div>
 
-      <div className="flex-1 flex flex-col h-full relative">
-        <div className="hidden md:flex h-16 bg-gray-800 border-b border-gray-700 justify-between items-center px-6 shrink-0 z-20">
+      <div className="flex-1 flex flex-col h-full relative z-10">
+        <div className="hidden md:flex h-16 bg-gray-800/90 border-b border-gray-700 justify-between items-center px-6 shrink-0 backdrop-blur-md">
           <div className="flex items-center gap-3">
              <div className="bg-purple-600 p-2 rounded-lg shadow-lg shadow-purple-900/50">
                 <Layout size={24} className="text-white" />
@@ -157,7 +196,7 @@ function App() {
              </div>
           </div>
 
-          <div className="flex bg-gray-900 rounded-lg p-1 border border-gray-700">
+          <div className="flex bg-gray-900/50 rounded-lg p-1 border border-gray-700">
               <button onClick={() => setView('studio')} className={`px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${view === 'studio' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}><Layout size={16} /> Studio</button>
               <button onClick={() => setView('battle')} className={`px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${view === 'battle' ? 'bg-red-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}><Swords size={16} /> Battle</button>
               <button onClick={() => setView('analytics')} className={`px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${view === 'analytics' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}><BarChart2 size={16} /> Analytics</button>
@@ -181,7 +220,7 @@ function App() {
           </div>
         </div>
 
-        <div className="md:hidden h-14 bg-gray-800 border-b border-gray-700 flex justify-between items-center px-4 shrink-0">
+        <div className="md:hidden h-14 bg-gray-800/90 border-b border-gray-700 flex justify-between items-center px-4 shrink-0 backdrop-blur-md">
             <h1 className="text-lg font-bold">B2Buddy</h1>
              <div className="flex gap-2">
                  <button onClick={toggleListening} className={`p-2 rounded-full ${isListening ? 'bg-red-500 text-white' : 'bg-gray-700 text-gray-300'}`}><Mic size={16} /></button>
@@ -191,20 +230,45 @@ function App() {
              </div>
         </div>
 
-        <div className="flex-1 overflow-hidden relative bg-gray-900 pb-16 md:pb-0">
-            {view === 'library' && <div className="h-full"><Library onLoadTrack={handleLoadTrack} onLoadSample={handleLoadSample} /></div>}
+        <div className="flex-1 overflow-hidden relative pb-16 md:pb-0">
+            {view === 'library' && <div className="h-full bg-gray-900"><Library onLoadTrack={handleLoadTrack} onLoadSample={handleLoadSample} /></div>}
 
             <div className={`h-full overflow-y-auto ${view === 'studio' ? 'block' : 'hidden'}`}>
                 <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-6 p-4 md:p-6">
-                    <DJDeck id={1} ref={deckARef} track={deckATrack} isActive={crossfader < 0.5} onParameterChange={(p, v) => handleDeckParamChange(0, p, v)} />
+                    <DJDeck
+                        id={1}
+                        ref={deckARef}
+                        track={deckATrack}
+                        isActive={crossfader < 0.5}
+                        volume={deckAVolume}
+                        onParameterChange={(p, v) => handleDeckParamChange(0, p, v)}
+                    />
                     <div className="order-last md:order-none w-full md:w-auto flex justify-center">
-                        <Mixer crossfader={crossfader} setCrossfader={handleCrossfaderChange} volumes={volumes} setVolume={handleVolumeChange} eqs={eqs} setEQ={handleEQChange} />
+                        <Mixer
+                            crossfader={crossfader}
+                            setCrossfader={handleCrossfaderChange}
+                            channels={channels}
+                            setChannelState={handleChannelStateChange}
+                        />
                     </div>
-                    <DJDeck id={2} ref={deckBRef} track={deckBTrack} isActive={crossfader > -0.5} onParameterChange={(p, v) => handleDeckParamChange(1, p, v)} />
+                    <DJDeck
+                        id={2}
+                        ref={deckBRef}
+                        track={deckBTrack}
+                        isActive={crossfader > -0.5}
+                        volume={deckBVolume}
+                        onParameterChange={(p, v) => handleDeckParamChange(1, p, v)}
+                    />
                 </div>
                 <div className="flex flex-col md:flex-row gap-6 p-4 md:px-6 md:pb-6">
-                    <div className="flex-1"><DrumRack pendingSample={pendingSample} onSampleAssigned={handleSampleAssigned} /></div>
-                    <div className="w-full md:w-80 bg-gray-800 p-4 rounded-lg border border-gray-700">
+                    <div className="flex-1">
+                        <DrumRack
+                            pendingSample={pendingSample}
+                            onSampleAssigned={handleSampleAssigned}
+                            onTriggerVideo={handleTriggerDrumVideo}
+                        />
+                    </div>
+                    <div className="w-full md:w-80 bg-gray-800/80 p-4 rounded-lg border border-gray-700 backdrop-blur-sm">
                         <h3 className="text-gray-400 font-bold mb-3 uppercase text-xs tracking-wider">AI B2B Partner</h3>
                         <div className="text-sm text-gray-300 space-y-2">
                             <div className="flex justify-between"><span>Status</span><span className={isB2BActive ? "text-green-400" : "text-gray-500"}>{isB2BActive ? "ACTIVE" : "STANDBY"}</span></div>
@@ -219,15 +283,22 @@ function App() {
                 <div className="md:hidden h-full"><BattleArena /></div>
                 <div className="hidden md:block h-full">
                      <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-6 p-4 md:p-6">
-                        <DJDeck id={1} track={deckATrack} isActive={crossfader < 0.5} onParameterChange={(p, v) => handleDeckParamChange(0, p, v)} />
-                        <div className="order-last md:order-none w-full md:w-auto flex justify-center"><Mixer crossfader={crossfader} setCrossfader={handleCrossfaderChange} volumes={volumes} setVolume={handleVolumeChange} eqs={eqs} setEQ={handleEQChange} /></div>
-                        <DJDeck id={2} track={deckBTrack} isActive={crossfader > -0.5} onParameterChange={(p, v) => handleDeckParamChange(1, p, v)} />
+                        <DJDeck id={1} track={deckATrack} isActive={crossfader < 0.5} volume={deckAVolume} onParameterChange={(p, v) => handleDeckParamChange(0, p, v)} />
+                        <div className="order-last md:order-none w-full md:w-auto flex justify-center">
+                            <Mixer
+                                crossfader={crossfader}
+                                setCrossfader={handleCrossfaderChange}
+                                channels={channels}
+                                setChannelState={handleChannelStateChange}
+                            />
+                        </div>
+                        <DJDeck id={2} track={deckBTrack} isActive={crossfader > -0.5} volume={deckBVolume} onParameterChange={(p, v) => handleDeckParamChange(1, p, v)} />
                     </div>
                 </div>
             </div>
 
             <div className={`h-full overflow-y-auto ${view === 'analytics' ? 'block' : 'hidden'}`}>
-                <div className="h-full p-4 md:p-6"><AnalyticsDashboard /></div>
+                <div className="h-full p-4 md:p-6 bg-gray-900"><AnalyticsDashboard /></div>
             </div>
         </div>
 
