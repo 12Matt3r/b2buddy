@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
-import { Play, Pause, Disc, Video } from 'lucide-react';
+import { Play, Pause, Disc, Video, Youtube } from 'lucide-react';
+import ReactPlayer from 'react-player';
 import { Track } from '../types';
 import { useAudio } from '../hooks/useAudio';
 
@@ -13,7 +14,7 @@ interface DJDeckProps {
     id: number;
     track: Track | null;
     isActive: boolean;
-    volume: number; // Added volume prop
+    volume: number;
     onTrackEnd?: () => void;
     onParameterChange: (param: string, value: any) => void;
 }
@@ -21,19 +22,29 @@ interface DJDeckProps {
 const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume, onParameterChange }, ref) => {
 
     const isVideo = track?.type === 'video';
-    // Destructure setVolume from useAudio
-    const { isLoaded, isPlaying, play: playAudio, pause: pauseAudio, setPlaybackRate, setVolume, getWaveformData } = useAudio(!isVideo ? (track?.url || null) : null);
+    const isYouTube = track?.type === 'youtube';
+    const isAudio = track?.type === 'audio' || !track;
+
+    const { isLoaded, isPlaying, play: playAudio, pause: pauseAudio, setPlaybackRate, setVolume, getWaveformData } = useAudio(isAudio ? (track?.url || null) : null);
 
     const [pitch, setPitch] = useState(0);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const animationRef = useRef<number>();
 
-    const [videoPlaying, setVideoPlaying] = useState(false);
+    const [mediaPlaying, setMediaPlaying] = useState(false);
 
-    const isDeckPlaying = isVideo ? videoPlaying : isPlaying;
-    const isDeckLoaded = isVideo ? !!track?.videoUrl : isLoaded;
+    const isDeckPlaying = isAudio ? isPlaying : mediaPlaying;
 
+    const isDeckLoaded = isAudio
+        ? isLoaded
+        : isVideo
+            ? !!track?.videoUrl
+            : isYouTube
+                ? !!track?.youtubeUrl
+                : false;
+
+    // --- Imperative Handle ---
     useImperativeHandle(ref, () => ({
         play: () => {
             if (isDeckLoaded) handlePlay();
@@ -46,36 +57,38 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
         }
     }));
 
-    // Update Volume when prop changes
+    // --- Volume Control ---
     useEffect(() => {
-        if (!isVideo) {
+        if (isAudio) {
             setVolume(volume);
-        } else if (videoRef.current) {
+        } else if (isVideo && videoRef.current) {
             videoRef.current.volume = volume;
         }
-    }, [volume, isVideo, setVolume]);
+    }, [volume, isAudio, isVideo, setVolume]);
+
+    // --- Playback Rate / Pitch Control ---
+    useEffect(() => {
+        const rate = 1 + (pitch / 100) * 0.08;
+        if (isAudio) {
+            setPlaybackRate(rate);
+        } else if (isVideo && videoRef.current) {
+            videoRef.current.playbackRate = rate;
+        }
+    }, [pitch, isAudio, isVideo, setPlaybackRate]);
 
     useEffect(() => {
         onParameterChange('playing', isDeckPlaying);
     }, [isDeckPlaying, onParameterChange]);
 
-    // Video Playback Logic
+    // --- Video Element Control ---
     useEffect(() => {
         if (isVideo && videoRef.current) {
-            if (videoPlaying) videoRef.current.play();
+            if (mediaPlaying) videoRef.current.play();
             else videoRef.current.pause();
         }
-    }, [videoPlaying, isVideo]);
+    }, [mediaPlaying, isVideo]);
 
-    useEffect(() => {
-        if (isVideo && videoRef.current) {
-            const rate = 1 + (pitch / 100) * 0.08;
-            videoRef.current.playbackRate = rate;
-        }
-    }, [pitch, isVideo]);
-
-
-    // Waveform Loop
+    // --- Waveform Visualization ---
     useEffect(() => {
         const draw = () => {
             const canvas = canvasRef.current;
@@ -88,11 +101,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
 
             ctx.clearRect(0, 0, width, height);
 
-            if (isVideo) {
-                ctx.fillStyle = "#333";
-                ctx.font = "10px sans-serif";
-                ctx.fillText("VIDEO TRACK", 10, height/2);
-            } else {
+            if (isAudio) {
                 const data = getWaveformData();
                 if (data) {
                     ctx.lineWidth = 2;
@@ -112,6 +121,11 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                     ctx.lineTo(canvas.width, canvas.height / 2);
                     ctx.stroke();
                 }
+            } else {
+                // Placeholder for Video/YouTube
+                ctx.fillStyle = "#333";
+                ctx.font = "10px sans-serif";
+                ctx.fillText(isYouTube ? "YOUTUBE STREAM" : "VIDEO TRACK", 10, height/2);
             }
             animationRef.current = requestAnimationFrame(draw);
         };
@@ -125,15 +139,16 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, [isDeckPlaying, getWaveformData, isActive, isVideo]);
+    }, [isDeckPlaying, getWaveformData, isActive, isAudio, isYouTube]);
 
+    // --- Handlers ---
     const handlePlay = () => {
-        if (isVideo) setVideoPlaying(true);
+        if (isVideo || isYouTube) setMediaPlaying(true);
         else playAudio();
     };
 
     const handlePause = () => {
-        if (isVideo) setVideoPlaying(false);
+        if (isVideo || isYouTube) setMediaPlaying(false);
         else pauseAudio();
     };
 
@@ -145,22 +160,44 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
     const handlePitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = parseFloat(e.target.value);
         setPitch(val);
-        const rate = 1 + (val / 100) * 0.08;
-        if (!isVideo) setPlaybackRate(rate);
         onParameterChange('pitch', val);
     };
 
+    // Calculate playback rate for props
+    const playbackRate = 1 + (pitch / 100) * 0.08;
+
     return (
         <div className={`bg-gray-800 p-4 rounded-lg border-2 ${isActive ? 'border-purple-500' : 'border-gray-700'} w-full max-w-md shadow-xl relative overflow-hidden`}>
-            {/* Background Video Layer */}
+
+            {/* Background Layer: Video or YouTube */}
             {isVideo && track?.videoUrl && (
                 <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
                     <video
                         ref={videoRef}
                         src={track.videoUrl}
                         loop
-                        // Removed muted attribute to allow audio
                         className="w-full h-full object-cover"
+                    />
+                </div>
+            )}
+
+            {isYouTube && track?.youtubeUrl && (
+                <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
+                    <ReactPlayer
+                        url={track.youtubeUrl}
+                        playing={mediaPlaying}
+                        volume={volume}
+                        playbackRate={playbackRate}
+                        loop={true}
+                        width="100%"
+                        height="100%"
+                        controls={false}
+                        className="react-player"
+                        config={{
+                            youtube: {
+                                playerVars: { controls: 0, showinfo: 0, modestbranding: 1 }
+                            } as any
+                        }}
                     />
                 </div>
             )}
@@ -176,7 +213,9 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                 {/* Visualizer Area */}
                 <div className="relative mb-6">
                     <div className={`w-48 h-48 mx-auto rounded-full border-4 border-gray-600 flex items-center justify-center relative overflow-hidden ${isDeckPlaying ? 'animate-spin-slow' : ''}`}>
-                        {isVideo ? <Video size={80} className="text-blue-500" /> : <Disc size={120} className="text-gray-500" />}
+                        {isVideo ? <Video size={80} className="text-blue-500" /> :
+                         isYouTube ? <Youtube size={80} className="text-red-500" /> :
+                         <Disc size={120} className="text-gray-500" />}
                     </div>
                     {/* Overlay Waveform Canvas */}
                     <canvas

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Track, Playlist } from '../types';
-import { Music, List, Upload, FolderPlus, Search, Grid, Plus, Loader2, Video, ListVideo } from 'lucide-react';
+import { Music, List, Upload, FolderPlus, Search, Grid, Plus, Loader2, Video, ListVideo, Youtube } from 'lucide-react';
 
 interface LibraryProps {
     onLoadTrack: (track: Track, deckId: number) => void;
@@ -23,7 +23,7 @@ const MOCK_SAMPLES = [
 ];
 
 const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
-    const [activeTab, setActiveTab] = useState<'tracks' | 'playlists' | 'samples' | 'queue'>('tracks');
+    const [activeTab, setActiveTab] = useState<'tracks' | 'playlists' | 'samples' | 'queue' | 'youtube'>('tracks');
     const [searchQuery, setSearchQuery] = useState('');
     const [tracks, setTracks] = useState<Track[]>(MOCK_TRACKS);
     const [playlists, setPlaylists] = useState<Playlist[]>([
@@ -35,6 +35,9 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
 
     // VJ Queue State
     const [vjQueue, setVjQueue] = useState<Track[]>([]);
+
+    // YouTube Input State
+    const [ytInput, setYtInput] = useState('');
 
     const filteredTracks = tracks.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -85,7 +88,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
             setTimeout(() => {
                 const url = URL.createObjectURL(file);
 
-                // Mock BPM Analysis: Generate random realistic BPM between 120-140
+                // Mock BPM Analysis
                 const mockBpm = Math.floor(Math.random() * (140 - 120 + 1)) + 120;
 
                 // Mock Key Analysis
@@ -112,6 +115,35 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
         }
     };
 
+    const handleYouTubeImport = () => {
+        if (!ytInput) return;
+
+        setIsAnalyzing(true);
+        // Simulate Processing
+        setTimeout(() => {
+            // In a real app, this would call a backend to get metadata or stream info.
+            // For this demo, we assume the URL works with ReactPlayer directly.
+            // We'll extract a dummy ID for the track.
+            const newTrack: Track = {
+                id: `yt-${Date.now()}`,
+                title: `YouTube Video ${Date.now().toString().slice(-4)}`,
+                artist: 'YouTube Import',
+                bpm: 128, // Default assumption
+                key: 'Am',
+                duration: 0, // Unknown without API
+                url: ytInput,
+                videoUrl: ytInput, // Use same URL for video
+                youtubeUrl: ytInput,
+                type: 'youtube'
+            };
+
+            setTracks([...tracks, newTrack]);
+            setYtInput('');
+            setIsAnalyzing(false);
+            setActiveTab('tracks'); // Switch back to tracks to see it
+        }, 1000);
+    };
+
     return (
         <div className="bg-gray-800 h-full flex flex-col border-r border-gray-700 w-80">
             {/* Tabs */}
@@ -135,6 +167,12 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                     <ListVideo size={16} />
                 </button>
                 <button
+                    onClick={() => setActiveTab('youtube')}
+                    className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'youtube' ? 'bg-gray-700 text-red-500' : 'text-gray-400 hover:bg-gray-700'}`}
+                >
+                    <Youtube size={16} />
+                </button>
+                <button
                     onClick={() => setActiveTab('samples')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'samples' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
                 >
@@ -143,18 +181,20 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
             </div>
 
             {/* Search */}
-            <div className="p-3 border-b border-gray-700">
-                <div className="relative">
-                    <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-gray-900 border border-gray-700 rounded-md py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500"
-                    />
+            {activeTab !== 'youtube' && (
+                <div className="p-3 border-b border-gray-700">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-gray-900 border border-gray-700 rounded-md py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500"
+                        />
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
@@ -171,7 +211,9 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                             <div key={track.id} className="p-3 hover:bg-gray-700 border-b border-gray-700/50 group">
                                 <div className="flex justify-between items-start">
                                     <div className="font-medium text-sm text-gray-200 flex items-center gap-2">
-                                        {track.type === 'video' ? <Video size={14} className="text-blue-400" /> : <Music size={14} className="text-gray-500" />}
+                                        {track.type === 'video' ? <Video size={14} className="text-blue-400" /> :
+                                         track.type === 'youtube' ? <Youtube size={14} className="text-red-500" /> :
+                                         <Music size={14} className="text-gray-500" />}
                                         {track.title}
                                     </div>
                                     <div className="flex gap-1">
@@ -211,6 +253,33 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {activeTab === 'youtube' && (
+                    <div className="p-4">
+                        <div className="mb-4">
+                            <label className="block text-xs font-bold text-gray-400 mb-2 uppercase">Import from YouTube</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Paste YouTube Link..."
+                                    value={ytInput}
+                                    onChange={(e) => setYtInput(e.target.value)}
+                                    className="flex-1 bg-gray-900 border border-gray-700 rounded p-2 text-sm focus:border-red-500 outline-none"
+                                />
+                                <button
+                                    onClick={handleYouTubeImport}
+                                    disabled={!ytInput || isAnalyzing}
+                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded"
+                                >
+                                    {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-gray-500 mt-2">
+                                Supports single videos and playlists. Tracks will be added to your library.
+                            </p>
+                        </div>
                     </div>
                 )}
 

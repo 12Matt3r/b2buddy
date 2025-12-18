@@ -36,6 +36,10 @@ function App() {
       { volume: 1, high: 0, mid: 0, low: 0 }, // Ch4: Deck B Video (Opacity)
   ]);
 
+  // Sync State for VJ
+  const [deckAPlaying, setDeckAPlaying] = useState(false);
+  const [deckBPlaying, setDeckBPlaying] = useState(false);
+
   const [pendingSample, setPendingSample] = useState<{url: string, name: string} | null>(null);
   const [activeDrumVideo, setActiveDrumVideo] = useState<string | null>(null);
   const [activeVJEFFECT, setActiveVJEFFECT] = useState<'datamosh' | 'pixelsort' | 'feedback' | 'colorshift' | 'none'>('none');
@@ -162,7 +166,14 @@ function App() {
 
   const handleLoadSample = (url: string, name: string) => { setPendingSample({ url, name }); };
   const handleSampleAssigned = () => { setPendingSample(null); };
-  const handleDeckParamChange = (deckId: number, param: string, value: any) => { aiService.logInteraction('play_pause', `deck_${deckId}_${param}`, value); };
+
+  const handleDeckParamChange = (deckId: number, param: string, value: any) => {
+      if (param === 'playing') {
+          if (deckId === 0) setDeckAPlaying(!!value);
+          else setDeckBPlaying(!!value);
+      }
+      aiService.logInteraction('play_pause', `deck_${deckId}_${param}`, value);
+  };
 
   return (
     <div className="h-screen bg-gray-900 text-white flex flex-col md:flex-row overflow-hidden font-sans relative">
@@ -172,6 +183,8 @@ function App() {
           channels={channels}
           deckAVideo={deckATrack?.videoUrl}
           deckBVideo={deckBTrack?.videoUrl}
+          deckAPlaying={deckAPlaying}
+          deckBPlaying={deckBPlaying}
           drumVideoClip={activeDrumVideo}
           activeEffect={activeVJEFFECT}
       />

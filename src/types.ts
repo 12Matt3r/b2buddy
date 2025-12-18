@@ -7,7 +7,8 @@ export interface Track {
     duration: number;
     url: string; // URL to audio file
     videoUrl?: string; // URL to video file (if VJ track)
-    type: 'audio' | 'video';
+    youtubeUrl?: string; // URL to YouTube video
+    type: 'audio' | 'video' | 'youtube';
 }
 
 export interface Playlist {
