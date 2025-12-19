@@ -38,11 +38,18 @@ const AnalyticsDashboard: React.FC = () => {
             <div className="flex justify-between items-center mb-1">
                 <div className="flex items-center gap-2 text-gray-300">
                     <Icon size={16} className={color} />
-                    <span className="text-sm font-medium">{label}</span>
+                    <span id={`trait-${label.replace(/\s+/g, '-').toLowerCase()}`} className="text-sm font-medium">{label}</span>
                 </div>
                 <span className="text-sm font-mono">{Math.round(value)}%</span>
             </div>
-            <div className="w-full bg-gray-700 rounded-full h-2.5">
+            <div
+                className="w-full bg-gray-700 rounded-full h-2.5"
+                role="progressbar"
+                aria-valuenow={Math.round(value)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-labelledby={`trait-${label.replace(/\s+/g, '-').toLowerCase()}`}
+            >
                 <div
                     className={`h-2.5 rounded-full transition-all duration-1000 ${color.replace('text-', 'bg-')}`}
                     style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
@@ -90,7 +97,7 @@ const AnalyticsDashboard: React.FC = () => {
                     </div>
 
                     {/* AI Prediction Widget */}
-                    <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-4 rounded border border-purple-500/30 mb-6">
+                    <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-4 rounded border border-purple-500/30 mb-6" aria-live="polite">
                         <div className="flex items-center gap-2 mb-2">
                             <TrendingUp className="text-green-400" size={18} />
                             <h4 className="font-bold text-sm text-gray-200">AI Predictive Insight</h4>
@@ -103,7 +110,7 @@ const AnalyticsDashboard: React.FC = () => {
 
                     <div className="mt-6">
                         <h4 className="text-xs uppercase text-gray-500 font-bold mb-2">Recent Activity Log</h4>
-                        <div className="h-48 overflow-y-auto space-y-2 text-xs font-mono bg-black p-2 rounded">
+                        <div className="h-48 overflow-y-auto space-y-2 text-xs font-mono bg-black p-2 rounded" aria-live="polite">
                             {stats.interactions.slice().reverse().map((int, i) => (
                                 <div key={i} className="text-gray-400 border-b border-gray-800 pb-1 mb-1">
                                     <span className="text-purple-500">[{new Date(int.timestamp).toLocaleTimeString()}]</span> {int.type} @ {int.target}

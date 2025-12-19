@@ -22,6 +22,7 @@ const BattleArena: React.FC = () => {
                 <button
                     onClick={startBattle}
                     className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105"
+                    aria-label="Start AI Battle"
                 >
                     START BATTLE
                 </button>
@@ -43,6 +44,7 @@ const BattleArena: React.FC = () => {
                 <button
                     onClick={startBattle}
                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-full"
+                    aria-label="Start Rematch"
                 >
                     REMATCH
                 </button>
@@ -79,10 +81,17 @@ const BattleArena: React.FC = () => {
             {/* Current Crowd Reaction */}
             <div className="mb-6">
                 <div className="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>Crowd Reaction</span>
+                    <span id="crowd-label">Crowd Reaction</span>
                     <span>{state.crowdReaction}%</span>
                 </div>
-                <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+                <div
+                    className="w-full bg-gray-700 h-2 rounded-full overflow-hidden"
+                    role="progressbar"
+                    aria-valuenow={state.crowdReaction}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-labelledby="crowd-label"
+                >
                     <div
                         className="h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-500"
                         style={{ width: `${state.crowdReaction}%` }}
@@ -91,7 +100,7 @@ const BattleArena: React.FC = () => {
             </div>
 
             {/* History Feed */}
-            <div className="flex-1">
+            <div className="flex-1" aria-live="polite">
                 <h3 className="text-xs uppercase text-gray-500 font-bold mb-3">Battle Log</h3>
                 <div className="space-y-3">
                     {state.history.slice().reverse().map((round, idx) => (

@@ -283,6 +283,8 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             className="w-full h-full object-cover"
             width={1280}
             height={720}
+            role="img"
+            aria-label="VJ Output Canvas"
         />
     );
 });
