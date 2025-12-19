@@ -177,6 +177,7 @@ function App() {
 
   return (
     <div className="h-screen bg-gray-900 text-white flex flex-col md:flex-row overflow-hidden font-sans relative">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-purple-600 text-white px-4 py-2 rounded shadow-lg">Skip to Content</a>
 
       {/* Master Video Output Background */}
       <MasterVideoOutput
@@ -251,7 +252,7 @@ function App() {
              </div>
         </div>
 
-        <div className="flex-1 overflow-hidden relative pb-16 md:pb-0">
+        <div id="main-content" className="flex-1 overflow-hidden relative pb-16 md:pb-0" tabIndex={-1}>
             {view === 'library' && <div className="h-full bg-gray-900"><Library onLoadTrack={handleLoadTrack} onLoadSample={handleLoadSample} /></div>}
 
             <div className={`h-full overflow-y-auto ${view === 'studio' ? 'block' : 'hidden'}`}>

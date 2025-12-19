@@ -163,11 +163,19 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
         onParameterChange('pitch', val);
     };
 
+    const handleResetPitch = () => {
+        setPitch(0);
+        onParameterChange('pitch', 0);
+    };
+
     // Calculate playback rate for props
     const playbackRate = 1 + (pitch / 100) * 0.08;
 
     return (
-        <div className={`bg-gray-800 p-4 rounded-lg border-2 ${isActive ? 'border-purple-500' : 'border-gray-700'} w-full max-w-md shadow-xl relative overflow-hidden`}>
+        <div
+            className={`bg-gray-800 p-4 rounded-lg border-2 ${isActive ? 'border-purple-500' : 'border-gray-700'} w-full max-w-md shadow-xl relative overflow-hidden`}
+            aria-label={`DJ Deck ${id}`}
+        >
 
             {/* Background Layer: Video or YouTube */}
             {isVideo && track?.videoUrl && (
@@ -233,6 +241,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
                             className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
+                            title={isDeckPlaying ? 'Pause' : 'Play'}
+                            aria-label={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
                         >
                             {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
                         </button>
@@ -246,13 +256,16 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             max="100"
                             value={pitch}
                             onChange={handlePitchChange}
+                            onDoubleClick={handleResetPitch}
+                            title="Double-click to reset pitch"
+                            aria-label={`Deck ${id} Pitch Control`}
                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                         />
                         <span className="text-xs w-8 text-right font-mono text-gray-300">{pitch > 0 ? '+' : ''}{pitch}%</span>
                     </div>
 
                     <div className="text-center text-sm font-mono text-purple-400 bg-purple-900/20 py-1 rounded">
-                        {track ? `${track.bpm} BPM` : '-- BPM'}
+                        {track ? `${track.bpm.toFixed(1)} BPM` : '-- BPM'}
                     </div>
                 </div>
             </div>

@@ -46,8 +46,10 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                                 min="-12"
                                 max="12"
                                 aria-label={`${deckLabel} ${typeLabel} ${getEqLabel(band)} EQ`}
+                                title={`Double-click to reset ${getEqLabel(band)}`}
                                 value={channels[index][band as keyof ChannelState]}
                                 onChange={(e) => setChannelState(index, { [band]: parseFloat(e.target.value) })}
+                                onDoubleClick={() => setChannelState(index, { [band]: 0 })}
                                 className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
                             />
                         </div>
@@ -63,8 +65,10 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                             max="1"
                             step="0.01"
                             aria-label={`${deckLabel} ${typeLabel} ${isVideo ? 'Opacity' : 'Volume'}`}
+                            title={`Double-click to reset ${isVideo ? 'Opacity' : 'Volume'}`}
                             value={channels[index].volume}
                             onChange={(e) => setChannelState(index, { volume: parseFloat(e.target.value) })}
+                            onDoubleClick={() => setChannelState(index, { volume: 1 })}
                             className="w-24 h-4 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
                         />
                     </div>
@@ -112,8 +116,10 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                     max="1"
                     step="0.01"
                     aria-label="Crossfader"
+                    title="Double-click to reset Crossfader"
                     value={crossfader}
                     onChange={(e) => setCrossfader(parseFloat(e.target.value))}
+                    onDoubleClick={() => setCrossfader(0)}
                     className="w-full h-6 bg-gray-900 rounded-full appearance-none cursor-pointer border border-gray-700"
                 />
             </div>

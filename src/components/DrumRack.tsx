@@ -114,8 +114,10 @@ const DrumRack: React.FC<DrumRackProps> = ({ pendingSample, onSampleAssigned, on
                     <button
                         key={sample.note}
                         onMouseDown={() => handlePadClick(index)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handlePadClick(index); }}
+                        aria-label={`Drum Pad ${sample.name} (${sample.note})`}
                         className={`
-                            h-16 rounded-md flex flex-col items-center justify-center transition-all relative overflow-hidden
+                            h-16 rounded-md flex flex-col items-center justify-center transition-all relative overflow-hidden outline-none focus:ring-2 focus:ring-white
                             ${activePad === sample.note ? 'brightness-150 scale-95 shadow-inner border-2 border-white' : 'hover:brightness-110'}
                             ${sample.color}
                         `}

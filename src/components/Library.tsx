@@ -187,11 +187,21 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                         <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
                         <input
                             type="text"
-                            placeholder="Search..."
+                            placeholder="Search tracks, artists..."
+                            aria-label="Search Library"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-gray-900 border border-gray-700 rounded-md py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500"
+                            className="w-full bg-gray-900 border border-gray-700 rounded-md py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500 placeholder-gray-600"
                         />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-300"
+                                aria-label="Clear Search"
+                            >
+                                ×
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -207,8 +217,18 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                 <input type="file" accept="audio/*,video/*" onChange={handleFileUpload} className="hidden" disabled={isAnalyzing} />
                             </label>
                         </div>
+                        {filteredTracks.length === 0 && (
+                            <div className="p-8 text-center text-gray-500">
+                                <p className="text-sm">No tracks found matching "{searchQuery}"</p>
+                                <button onClick={() => setSearchQuery('')} className="mt-2 text-xs text-purple-400 hover:text-purple-300 underline">Clear Search</button>
+                            </div>
+                        )}
                         {filteredTracks.map(track => (
-                            <div key={track.id} className="p-3 hover:bg-gray-700 border-b border-gray-700/50 group">
+                            <div
+                                key={track.id}
+                                className="p-3 hover:bg-gray-700 border-b border-gray-700/50 group transition-colors duration-150"
+                                role="listitem"
+                            >
                                 <div className="flex justify-between items-start">
                                     <div className="font-medium text-sm text-gray-200 flex items-center gap-2">
                                         {track.type === 'video' ? <Video size={14} className="text-blue-400" /> :
@@ -240,13 +260,17 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                 <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => onLoadTrack(track, 0)}
-                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded focus:opacity-100"
+                                        aria-label={`Load ${track.title} to Deck A`}
+                                        title="Load to Deck A"
                                     >
                                         Load A
                                     </button>
                                     <button
                                         onClick={() => onLoadTrack(track, 1)}
-                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded focus:opacity-100"
+                                        aria-label={`Load ${track.title} to Deck B`}
+                                        title="Load to Deck B"
                                     >
                                         Load B
                                     </button>
@@ -332,10 +356,10 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                 </div>
                                 <div className="flex gap-2">
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                         <button onClick={() => onLoadTrack(track, 0)} className="text-xs bg-purple-600 px-2 py-1 rounded">A</button>
-                                         <button onClick={() => onLoadTrack(track, 1)} className="text-xs bg-purple-600 px-2 py-1 rounded">B</button>
+                                         <button onClick={() => onLoadTrack(track, 0)} className="text-xs bg-purple-600 px-2 py-1 rounded" aria-label="Load to Deck A" title="Load to Deck A">A</button>
+                                         <button onClick={() => onLoadTrack(track, 1)} className="text-xs bg-purple-600 px-2 py-1 rounded" aria-label="Load to Deck B" title="Load to Deck B">B</button>
                                     </div>
-                                    <button onClick={() => handleRemoveFromQueue(idx)} className="text-gray-500 hover:text-red-400">×</button>
+                                    <button onClick={() => handleRemoveFromQueue(idx)} className="text-gray-500 hover:text-red-400" aria-label="Remove from Queue" title="Remove">×</button>
                                 </div>
                             </div>
                         ))}
