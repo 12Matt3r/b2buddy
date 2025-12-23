@@ -46,7 +46,9 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                                 min="-12"
                                 max="12"
                                 value={channels[index][band as keyof ChannelState]}
+                                aria-label={`${deckLabel} ${typeLabel} ${getEqLabel(band)} EQ`}
                                 onChange={(e) => setChannelState(index, { [band]: parseFloat(e.target.value) })}
+                                onDoubleClick={() => setChannelState(index, { [band]: 0 })}
                                 className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
                             />
                         </div>
@@ -62,6 +64,7 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                             max="1"
                             step="0.01"
                             value={channels[index].volume}
+                            aria-label={`${deckLabel} ${typeLabel} ${isVideo ? 'Opacity' : 'Volume'}`}
                             onChange={(e) => setChannelState(index, { volume: parseFloat(e.target.value) })}
                             className="w-24 h-4 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
                         />
@@ -86,7 +89,7 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                         <div className="text-center text-gray-500 text-xs mb-2">MASTER</div>
                         <div className="h-32 w-4 bg-gray-900 rounded border border-gray-700 relative overflow-hidden">
                             {/* Fake VU Meter */}
-                            <div className="absolute bottom-0 w-full bg-green-500 h-2/3 opacity-50"></div>
+                            <div className="absolute bottom-0 w-full bg-green-500 h-2/3 opacity-50" aria-hidden="true"></div>
                         </div>
                     </div>
                 </div>
@@ -110,7 +113,9 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                     max="1"
                     step="0.01"
                     value={crossfader}
+                    aria-label="Crossfader"
                     onChange={(e) => setCrossfader(parseFloat(e.target.value))}
+                    onDoubleClick={() => setCrossfader(0)}
                     className="w-full h-6 bg-gray-900 rounded-full appearance-none cursor-pointer border border-gray-700"
                 />
             </div>
