@@ -1,0 +1,3 @@
+## 2024-05-23 - Prevent Render Loop Churn
+**Learning:** React `useEffect` hooks with dependencies are destructive for animation loops (`requestAnimationFrame`). If a dependency changes frequently (like a slider value), the effect cleanup runs, cancelling the animation frame, and then the effect re-runs to restart it. This constant stop-start cycle causes jitter and performance degradation.
+**Action:** Use `useRef` to store mutable values (like opacity, positions) that are needed inside the render loop. Update the ref in a separate `useEffect`, and keep the animation loop `useEffect` dependency-free (or static) so it runs continuously.
