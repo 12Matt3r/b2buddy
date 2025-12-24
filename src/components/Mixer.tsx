@@ -47,6 +47,9 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                                 max="12"
                                 value={channels[index][band as keyof ChannelState]}
                                 onChange={(e) => setChannelState(index, { [band]: parseFloat(e.target.value) })}
+                                onDoubleClick={() => setChannelState(index, { [band]: 0 })}
+                                aria-label={`${deckLabel} ${getEqLabel(band)} EQ`}
+                                title="Double-click to reset"
                                 className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
                             />
                         </div>
@@ -111,6 +114,9 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                     step="0.01"
                     value={crossfader}
                     onChange={(e) => setCrossfader(parseFloat(e.target.value))}
+                    onDoubleClick={() => setCrossfader(0)}
+                    aria-label="Crossfader"
+                    title="Double-click to reset"
                     className="w-full h-6 bg-gray-900 rounded-full appearance-none cursor-pointer border border-gray-700"
                 />
             </div>
