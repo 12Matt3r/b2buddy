@@ -24,6 +24,11 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
     // State for controls
     const [effect, setEffectState] = useState<'datamosh' | 'pixelsort' | 'feedback' | 'colorshift' | 'none'>('datamosh');
+
+    // Bolt Optimization: Use ref to store props to prevent render loop restart on every prop change
+    const latestProps = useRef({ videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB, effect });
+    latestProps.current = { videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB, effect };
+
     const controls = useRef({
         trail: 0.9, motion: 0.12, hue: 0.0, history: 6, extrap: 0.0, intensity: 0.5,
         displacement: 0.01, feedback: 0.2, threshold: 0.5, brightness: 0.0, contrast: 1.0, saturation: 1.0
@@ -147,6 +152,10 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
     useEffect(() => {
         const render = () => {
             const { gl, programs, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
+
+            // Read latest props from ref to avoid closure staleness without restarting loop
+            const { videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB, effect } = latestProps.current;
+
             if (!gl) return;
 
             const width = gl.canvas.width;
@@ -275,7 +284,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
         animationRef.current = requestAnimationFrame(render);
         return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-    }, [effect, opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB]);
+    }, []); // Bolt: Empty dependency array ensures render loop persists through prop changes
 
     return (
         <canvas
