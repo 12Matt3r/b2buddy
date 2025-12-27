@@ -22,7 +22,7 @@ const MOCK_SAMPLES = [
     { id: 's4', name: 'Clap FX', url: 'https://tonejs.github.io/audio/drum-samples/CR78/tom1.mp3' },
 ];
 
-const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
+const Library: React.FC<LibraryProps> = React.memo(({ onLoadTrack, onLoadSample }) => {
     const [activeTab, setActiveTab] = useState<'tracks' | 'playlists' | 'samples' | 'queue' | 'youtube'>('tracks');
     const [searchQuery, setSearchQuery] = useState('');
     const [tracks, setTracks] = useState<Track[]>(MOCK_TRACKS);
@@ -361,6 +361,6 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
             </div>
         </div>
     );
-};
+});
 
 export default Library;
