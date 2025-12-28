@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { ChannelState } from '../types';
 
 interface MixerProps {
@@ -9,6 +9,9 @@ interface MixerProps {
 }
 
 const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setChannelState }) => {
+    // Generate a unique ID prefix for this instance of the Mixer component
+    // This ensures IDs are unique even if multiple Mixers are rendered (e.g., mobile vs desktop)
+    const instanceId = useId();
 
     const renderChannel = (index: number) => {
         // Channel Mapping:
@@ -37,21 +40,28 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                 </div>
 
                 {/* EQs */}
-                {['high', 'mid', 'low'].map((band) => (
-                    <div key={band} className="flex flex-col items-center">
-                        <span className="text-[9px] uppercase text-gray-500 mb-1">{getEqLabel(band)}</span>
-                        <div className="h-16 w-6 flex items-center justify-center">
-                            <input
-                                type="range"
-                                min="-12"
-                                max="12"
-                                value={channels[index][band as keyof ChannelState]}
-                                onChange={(e) => setChannelState(index, { [band]: parseFloat(e.target.value) })}
-                                className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
-                            />
+                {['high', 'mid', 'low'].map((band) => {
+                    const eqId = `${instanceId}-eq-${index}-${band}`;
+                    return (
+                        <div key={band} className="flex flex-col items-center">
+                            <label htmlFor={eqId} className="text-[9px] uppercase text-gray-500 mb-1">
+                                {getEqLabel(band)}
+                            </label>
+                            <div className="h-16 w-6 flex items-center justify-center">
+                                <input
+                                    id={eqId}
+                                    type="range"
+                                    min="-12"
+                                    max="12"
+                                    aria-label={`${deckLabel} ${typeLabel} ${getEqLabel(band)}`}
+                                    value={channels[index][band as keyof ChannelState]}
+                                    onChange={(e) => setChannelState(index, { [band]: parseFloat(e.target.value) })}
+                                    className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                />
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
 
                 {/* Volume/Opacity Fader */}
                 <div className="mt-2 flex flex-col items-center h-32 justify-end">
@@ -61,9 +71,10 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                             min="0"
                             max="1"
                             step="0.01"
+                            aria-label={`${deckLabel} ${typeLabel} ${isVideo ? 'Opacity' : 'Volume'}`}
                             value={channels[index].volume}
                             onChange={(e) => setChannelState(index, { volume: parseFloat(e.target.value) })}
-                            className="w-24 h-4 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
+                            className="w-24 h-4 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center focus:ring-2 focus:ring-purple-500 focus:outline-none"
                         />
                     </div>
                     <span className="text-[10px] mt-1 text-gray-500">{isVideo ? 'OPAC' : 'VOL'}</span>
@@ -84,7 +95,10 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                 <div className="flex flex-col justify-between items-center w-24 shrink-0">
                     <div className="h-full flex flex-col justify-center items-center">
                         <div className="text-center text-gray-500 text-xs mb-2">MASTER</div>
-                        <div className="h-32 w-4 bg-gray-900 rounded border border-gray-700 relative overflow-hidden">
+                        <div
+                            className="h-32 w-4 bg-gray-900 rounded border border-gray-700 relative overflow-hidden"
+                            aria-hidden="true"
+                        >
                             {/* Fake VU Meter */}
                             <div className="absolute bottom-0 w-full bg-green-500 h-2/3 opacity-50"></div>
                         </div>
@@ -109,9 +123,10 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                     min="-1"
                     max="1"
                     step="0.01"
+                    aria-label="Crossfader"
                     value={crossfader}
                     onChange={(e) => setCrossfader(parseFloat(e.target.value))}
-                    className="w-full h-6 bg-gray-900 rounded-full appearance-none cursor-pointer border border-gray-700"
+                    className="w-full h-6 bg-gray-900 rounded-full appearance-none cursor-pointer border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 />
             </div>
         </div>
