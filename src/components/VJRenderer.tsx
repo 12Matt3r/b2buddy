@@ -29,6 +29,28 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
         displacement: 0.01, feedback: 0.2, threshold: 0.5, brightness: 0.0, contrast: 1.0, saturation: 1.0
     });
 
+    // Refs to store latest props for the render loop
+    const propsRef = useRef({
+        effect,
+        opacityA,
+        opacityB,
+        mixBlendModeB,
+        videoSourceA,
+        videoSourceB
+    });
+
+    // Sync props to ref
+    useEffect(() => {
+        propsRef.current = {
+            effect,
+            opacityA,
+            opacityB,
+            mixBlendModeB,
+            videoSourceA,
+            videoSourceB
+        };
+    }, [effect, opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB]);
+
     // Expose controls to parent
     useImperativeHandle(ref, () => ({
         setEffect: (e) => setEffectState(e),
@@ -145,16 +167,52 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
     // Render Loop
     useEffect(() => {
+        // Optimized: Only create helper functions ONCE per mount
+        const drawTexture = (gl: WebGLRenderingContext, programs: any, positionBuffer: WebGLBuffer, texCoordBuffer: WebGLBuffer, tex: WebGLTexture, opacity: number, blend: string) => {
+            if (opacity <= 0) return;
+            gl.useProgram(programs.passthrough);
+
+            // Uniforms
+            gl.enable(gl.BLEND);
+            if (blend === 'screen') gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR); // Approximation
+            else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Normal
+
+            // Bind Attributes
+            const pLoc = gl.getAttribLocation(programs.passthrough, 'a_position');
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(pLoc);
+
+            const tLoc = gl.getAttribLocation(programs.passthrough, 'a_texCoord');
+            gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+            gl.vertexAttribPointer(tLoc, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(tLoc);
+
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.uniform1i(gl.getUniformLocation(programs.passthrough, 'u_textureToDraw'), 0);
+
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            gl.disable(gl.BLEND);
+        };
+
+        const setUniform = (gl: WebGLRenderingContext, prog: WebGLProgram, name: string, val: number) => {
+            const loc = gl.getUniformLocation(prog, name);
+            if (loc) gl.uniform1f(loc, val);
+        };
+
         const render = () => {
             const { gl, programs, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
             if (!gl) return;
+
+            // ⚡ Optimization: Access latest props from ref to avoid restarting loop
+            const { effect, opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB } = propsRef.current;
 
             const width = gl.canvas.width;
             const height = gl.canvas.height;
             gl.viewport(0, 0, width, height);
 
             // 1. Upload Video Frames to Textures
-            // Only update if video has enough data
             if (videoSourceA && videoSourceA.readyState >= 2) {
                 gl.bindTexture(gl.TEXTURE_2D, textures.sourceA);
                 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -166,61 +224,18 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoSourceB);
             }
 
-            // 2. Mix A and B into 'mixed' texture (using Passthrough shader or custom mix shader)
-            // For MVP we just use opacity in JS to decide what to draw? No, we need to mix in WebGL.
-            // Or simpler: Draw A to FBO, then Draw B to FBO with blend?
-            // Let's use a simpler approach: Draw the "Visible" content to the 'mixed' FBO.
-
+            // 2. Mix A and B
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbos.mixed);
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
-            // Use passthrough to draw A
-            const drawTexture = (tex: WebGLTexture, opacity: number, blend: string) => {
-                if (opacity <= 0) return;
-                gl.useProgram(programs.passthrough);
-
-                // Uniforms
-                // We need to modify passthrough shader to handle opacity if we want true mixing
-                // But the provided shader doesn't have opacity uniform.
-                // Let's rely on standard gl blend func for now.
-                gl.enable(gl.BLEND);
-                if (blend === 'screen') gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR); // Approximation
-                else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Normal
-
-                // Bind Attributes
-                const pLoc = gl.getAttribLocation(programs.passthrough, 'a_position');
-                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-                gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
-                gl.enableVertexAttribArray(pLoc);
-
-                const tLoc = gl.getAttribLocation(programs.passthrough, 'a_texCoord');
-                gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-                gl.vertexAttribPointer(tLoc, 2, gl.FLOAT, false, 0, 0);
-                gl.enableVertexAttribArray(tLoc);
-
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, tex);
-                gl.uniform1i(gl.getUniformLocation(programs.passthrough, 'u_textureToDraw'), 0);
-
-                // Note: Opacity is tricky without shader support.
-                // We are stuck with provided shaders.
-                // WORKAROUND: If effects are active, we process ONE main output.
-                // Which source is "Webcam"? The MIXED result.
-
-                gl.drawArrays(gl.TRIANGLES, 0, 6);
-                gl.disable(gl.BLEND);
-            };
-
             // Draw A
-            drawTexture(textures.sourceA, opacityA, 'normal');
+            drawTexture(gl, programs, positionBuffer, texCoordBuffer, textures.sourceA, opacityA, 'normal');
             // Draw B
-            drawTexture(textures.sourceB, opacityB, mixBlendModeB === 'screen' ? 'screen' : 'normal');
+            drawTexture(gl, programs, positionBuffer, texCoordBuffer, textures.sourceB, opacityB, mixBlendModeB === 'screen' ? 'screen' : 'normal');
 
 
-            // 3. Apply Effect (Ping Pong)
-            // Input: 'mixed' texture. Output: Screen (or FBO for history)
-            // Use currentDest FBO
+            // 3. Apply Effect
             const destFBO = fbos[currentDest];
             const sourceTex = textures[currentSource]; // History
 
@@ -228,32 +243,26 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             const prog = programs[effect] || programs.passthrough;
             gl.useProgram(prog);
 
-            // Set Uniforms
-            const setUniform = (name: string, val: number) => {
-                const loc = gl.getUniformLocation(prog, name);
-                if (loc) gl.uniform1f(loc, val);
-            };
-
             const ctrls = controls.current;
-            setUniform('u_time', (performance.now() - startTime) / 1000);
-            setUniform('u_motionThreshold', ctrls.motion);
-            setUniform('u_trailPersistence', ctrls.trail);
-            setUniform('u_hueShiftSpeed', ctrls.hue);
-            setUniform('u_motionExtrapolation', ctrls.extrap);
-            setUniform('u_intensity', ctrls.intensity);
-            setUniform('u_displacement', ctrls.displacement);
-            setUniform('u_feedback', ctrls.feedback);
-            setUniform('u_threshold', ctrls.threshold);
-            setUniform('u_brightness', ctrls.brightness);
-            setUniform('u_contrast', ctrls.contrast);
-            setUniform('u_saturation', ctrls.saturation);
+            setUniform(gl, prog, 'u_time', (performance.now() - startTime) / 1000);
+            setUniform(gl, prog, 'u_motionThreshold', ctrls.motion);
+            setUniform(gl, prog, 'u_trailPersistence', ctrls.trail);
+            setUniform(gl, prog, 'u_hueShiftSpeed', ctrls.hue);
+            setUniform(gl, prog, 'u_motionExtrapolation', ctrls.extrap);
+            setUniform(gl, prog, 'u_intensity', ctrls.intensity);
+            setUniform(gl, prog, 'u_displacement', ctrls.displacement);
+            setUniform(gl, prog, 'u_feedback', ctrls.feedback);
+            setUniform(gl, prog, 'u_threshold', ctrls.threshold);
+            setUniform(gl, prog, 'u_brightness', ctrls.brightness);
+            setUniform(gl, prog, 'u_contrast', ctrls.contrast);
+            setUniform(gl, prog, 'u_saturation', ctrls.saturation);
 
             gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, textures.mixed); // "Webcam" input is our mix
+            gl.bindTexture(gl.TEXTURE_2D, textures.mixed);
             gl.uniform1i(gl.getUniformLocation(prog, 'u_webcamTexture'), 0);
 
             gl.activeTexture(gl.TEXTURE1);
-            gl.bindTexture(gl.TEXTURE_2D, sourceTex); // History input
+            gl.bindTexture(gl.TEXTURE_2D, sourceTex);
             gl.uniform1i(gl.getUniformLocation(prog, 'u_previousFrameTexture'), 1);
 
             gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -262,7 +271,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.useProgram(programs.passthrough);
             gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, textures[currentDest]); // Result
+            gl.bindTexture(gl.TEXTURE_2D, textures[currentDest]);
             gl.uniform1i(gl.getUniformLocation(programs.passthrough, 'u_textureToDraw'), 0);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -275,7 +284,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
         animationRef.current = requestAnimationFrame(render);
         return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-    }, [effect, opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB]);
+    }, []); // ⚡ No dependencies = loop runs uninterrupted
 
     return (
         <canvas
