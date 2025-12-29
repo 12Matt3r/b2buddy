@@ -45,9 +45,10 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                                 type="range"
                                 min="-12"
                                 max="12"
+                                aria-label={`${deckLabel} ${typeLabel} ${getEqLabel(band)}`}
                                 value={channels[index][band as keyof ChannelState]}
                                 onChange={(e) => setChannelState(index, { [band]: parseFloat(e.target.value) })}
-                                className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
+                                className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
                         </div>
                     </div>
@@ -61,9 +62,10 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                             min="0"
                             max="1"
                             step="0.01"
+                            aria-label={`${deckLabel} ${typeLabel} ${isVideo ? 'Opacity' : 'Volume'}`}
                             value={channels[index].volume}
                             onChange={(e) => setChannelState(index, { volume: parseFloat(e.target.value) })}
-                            className="w-24 h-4 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
+                            className="w-24 h-4 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                     </div>
                     <span className="text-[10px] mt-1 text-gray-500">{isVideo ? 'OPAC' : 'VOL'}</span>
@@ -109,9 +111,10 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                     min="-1"
                     max="1"
                     step="0.01"
+                    aria-label="Crossfader"
                     value={crossfader}
                     onChange={(e) => setCrossfader(parseFloat(e.target.value))}
-                    className="w-full h-6 bg-gray-900 rounded-full appearance-none cursor-pointer border border-gray-700"
+                    className="w-full h-6 bg-gray-900 rounded-full appearance-none cursor-pointer border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
             </div>
         </div>
