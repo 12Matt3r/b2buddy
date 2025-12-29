@@ -8,6 +8,22 @@ export const handler: Handler = async (event, context) => {
     try {
         const { rounds = 3, difficulty = 'normal' } = JSON.parse(event.body || '{}');
 
+        // SECURITY: Input Validation
+        if (!Number.isInteger(rounds) || rounds < 1 || rounds > 10) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Invalid rounds. Must be an integer between 1 and 10.' })
+            };
+        }
+
+        const validDifficulties = ['easy', 'normal', 'hard'];
+        if (typeof difficulty !== 'string' || !validDifficulties.includes(difficulty)) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Invalid difficulty. Must be easy, normal, or hard.' })
+            };
+        }
+
         const battleId = `battle_${Date.now()}`;
 
         // Initialize Battle State
