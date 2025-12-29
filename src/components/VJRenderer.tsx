@@ -72,13 +72,47 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             return p;
         };
 
-        const programs = {
+        const programs: Record<string, WebGLProgram | null> = {
             datamosh: createProgram(vsSource, datamoshShader),
             pixelsort: createProgram(vsSource, pixelSortShader),
             feedback: createProgram(vsSource, feedbackShader),
             colorshift: createProgram(vsSource, colorShiftShader),
             passthrough: createProgram(vsSource, fsPassthroughSource)
         };
+
+        // Cache Locations
+        const locations: any = {};
+
+        // Helper to cache locations for a program
+        const cacheProgramLocations = (name: string, prog: WebGLProgram | null) => {
+            if (!prog) return;
+            locations[name] = {
+                attribs: {
+                    position: gl.getAttribLocation(prog, 'a_position'),
+                    texCoord: gl.getAttribLocation(prog, 'a_texCoord')
+                },
+                uniforms: {
+                    textureToDraw: gl.getUniformLocation(prog, 'u_textureToDraw'),
+                    webcamTexture: gl.getUniformLocation(prog, 'u_webcamTexture'),
+                    previousFrameTexture: gl.getUniformLocation(prog, 'u_previousFrameTexture'),
+                    time: gl.getUniformLocation(prog, 'u_time'),
+                    motionThreshold: gl.getUniformLocation(prog, 'u_motionThreshold'),
+                    trailPersistence: gl.getUniformLocation(prog, 'u_trailPersistence'),
+                    hueShiftSpeed: gl.getUniformLocation(prog, 'u_hueShiftSpeed'),
+                    motionExtrapolation: gl.getUniformLocation(prog, 'u_motionExtrapolation'),
+                    intensity: gl.getUniformLocation(prog, 'u_intensity'),
+                    displacement: gl.getUniformLocation(prog, 'u_displacement'),
+                    feedback: gl.getUniformLocation(prog, 'u_feedback'),
+                    threshold: gl.getUniformLocation(prog, 'u_threshold'),
+                    brightness: gl.getUniformLocation(prog, 'u_brightness'),
+                    contrast: gl.getUniformLocation(prog, 'u_contrast'),
+                    saturation: gl.getUniformLocation(prog, 'u_saturation')
+                }
+            };
+        };
+
+        Object.keys(programs).forEach(key => cacheProgramLocations(key, programs[key]));
+
 
         // Buffers
         const positionBuffer = gl.createBuffer();
@@ -106,7 +140,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
         const h = canvas.height || 720;
 
         resources.current = {
-            gl, programs, positionBuffer, texCoordBuffer,
+            gl, programs, locations, positionBuffer, texCoordBuffer,
             textures: {
                 sourceA: createTexture(w, h),
                 sourceB: createTexture(w, h),
@@ -146,7 +180,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
     // Render Loop
     useEffect(() => {
         const render = () => {
-            const { gl, programs, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
+            const { gl, programs, locations, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
             if (!gl) return;
 
             const width = gl.canvas.width;
@@ -166,11 +200,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoSourceB);
             }
 
-            // 2. Mix A and B into 'mixed' texture (using Passthrough shader or custom mix shader)
-            // For MVP we just use opacity in JS to decide what to draw? No, we need to mix in WebGL.
-            // Or simpler: Draw A to FBO, then Draw B to FBO with blend?
-            // Let's use a simpler approach: Draw the "Visible" content to the 'mixed' FBO.
-
+            // 2. Mix A and B into 'mixed' texture (using Passthrough shader)
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbos.mixed);
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
@@ -180,33 +210,25 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
                 if (opacity <= 0) return;
                 gl.useProgram(programs.passthrough);
 
-                // Uniforms
-                // We need to modify passthrough shader to handle opacity if we want true mixing
-                // But the provided shader doesn't have opacity uniform.
-                // Let's rely on standard gl blend func for now.
+                const locs = locations['passthrough'];
+
+                // Blend
                 gl.enable(gl.BLEND);
                 if (blend === 'screen') gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR); // Approximation
                 else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Normal
 
                 // Bind Attributes
-                const pLoc = gl.getAttribLocation(programs.passthrough, 'a_position');
                 gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-                gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
-                gl.enableVertexAttribArray(pLoc);
+                gl.vertexAttribPointer(locs.attribs.position, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(locs.attribs.position);
 
-                const tLoc = gl.getAttribLocation(programs.passthrough, 'a_texCoord');
                 gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-                gl.vertexAttribPointer(tLoc, 2, gl.FLOAT, false, 0, 0);
-                gl.enableVertexAttribArray(tLoc);
+                gl.vertexAttribPointer(locs.attribs.texCoord, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(locs.attribs.texCoord);
 
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, tex);
-                gl.uniform1i(gl.getUniformLocation(programs.passthrough, 'u_textureToDraw'), 0);
-
-                // Note: Opacity is tricky without shader support.
-                // We are stuck with provided shaders.
-                // WORKAROUND: If effects are active, we process ONE main output.
-                // Which source is "Webcam"? The MIXED result.
+                gl.uniform1i(locs.uniforms.textureToDraw, 0);
 
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
                 gl.disable(gl.BLEND);
@@ -226,44 +248,56 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, destFBO);
             const prog = programs[effect] || programs.passthrough;
+            const progKey = programs[effect] ? effect : 'passthrough';
+            const locs = locations[progKey];
+
             gl.useProgram(prog);
 
-            // Set Uniforms
-            const setUniform = (name: string, val: number) => {
-                const loc = gl.getUniformLocation(prog, name);
-                if (loc) gl.uniform1f(loc, val);
-            };
-
             const ctrls = controls.current;
-            setUniform('u_time', (performance.now() - startTime) / 1000);
-            setUniform('u_motionThreshold', ctrls.motion);
-            setUniform('u_trailPersistence', ctrls.trail);
-            setUniform('u_hueShiftSpeed', ctrls.hue);
-            setUniform('u_motionExtrapolation', ctrls.extrap);
-            setUniform('u_intensity', ctrls.intensity);
-            setUniform('u_displacement', ctrls.displacement);
-            setUniform('u_feedback', ctrls.feedback);
-            setUniform('u_threshold', ctrls.threshold);
-            setUniform('u_brightness', ctrls.brightness);
-            setUniform('u_contrast', ctrls.contrast);
-            setUniform('u_saturation', ctrls.saturation);
+
+            // Set Uniforms using cached locations
+            if (locs.uniforms.time) gl.uniform1f(locs.uniforms.time, (performance.now() - startTime) / 1000);
+            if (locs.uniforms.motionThreshold) gl.uniform1f(locs.uniforms.motionThreshold, ctrls.motion);
+            if (locs.uniforms.trailPersistence) gl.uniform1f(locs.uniforms.trailPersistence, ctrls.trail);
+            if (locs.uniforms.hueShiftSpeed) gl.uniform1f(locs.uniforms.hueShiftSpeed, ctrls.hue);
+            if (locs.uniforms.motionExtrapolation) gl.uniform1f(locs.uniforms.motionExtrapolation, ctrls.extrap);
+            if (locs.uniforms.intensity) gl.uniform1f(locs.uniforms.intensity, ctrls.intensity);
+            if (locs.uniforms.displacement) gl.uniform1f(locs.uniforms.displacement, ctrls.displacement);
+            if (locs.uniforms.feedback) gl.uniform1f(locs.uniforms.feedback, ctrls.feedback);
+            if (locs.uniforms.threshold) gl.uniform1f(locs.uniforms.threshold, ctrls.threshold);
+            if (locs.uniforms.brightness) gl.uniform1f(locs.uniforms.brightness, ctrls.brightness);
+            if (locs.uniforms.contrast) gl.uniform1f(locs.uniforms.contrast, ctrls.contrast);
+            if (locs.uniforms.saturation) gl.uniform1f(locs.uniforms.saturation, ctrls.saturation);
 
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, textures.mixed); // "Webcam" input is our mix
-            gl.uniform1i(gl.getUniformLocation(prog, 'u_webcamTexture'), 0);
+            if (locs.uniforms.webcamTexture) gl.uniform1i(locs.uniforms.webcamTexture, 0);
 
             gl.activeTexture(gl.TEXTURE1);
             gl.bindTexture(gl.TEXTURE_2D, sourceTex); // History input
-            gl.uniform1i(gl.getUniformLocation(prog, 'u_previousFrameTexture'), 1);
+            if (locs.uniforms.previousFrameTexture) gl.uniform1i(locs.uniforms.previousFrameTexture, 1);
 
             gl.drawArrays(gl.TRIANGLES, 0, 6);
 
             // 4. Draw to Screen
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.useProgram(programs.passthrough);
+
+            const passLocs = locations['passthrough'];
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, textures[currentDest]); // Result
-            gl.uniform1i(gl.getUniformLocation(programs.passthrough, 'u_textureToDraw'), 0);
+            gl.uniform1i(passLocs.uniforms.textureToDraw, 0);
+
+            // We need to re-bind attribs for passthrough if they changed?
+            // Usually standard across programs, but safe to rebind
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.vertexAttribPointer(passLocs.attribs.position, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(passLocs.attribs.position);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+            gl.vertexAttribPointer(passLocs.attribs.texCoord, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(passLocs.attribs.texCoord);
+
             gl.drawArrays(gl.TRIANGLES, 0, 6);
 
             // Swap
