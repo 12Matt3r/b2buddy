@@ -1,0 +1,4 @@
+## 2025-05-24 - Missing Input Validation in Serverless Functions
+**Vulnerability:** The `create-battle` Netlify function lacked input validation for `rounds` and `difficulty` parameters, despite documentation claiming otherwise. It accepted arbitrary values (e.g., negative rounds, invalid difficulty strings), which could lead to application logic errors or potential abuse.
+**Learning:** Documentation and memory can be out of sync with the actual codebase. "Trust but verify" is essential when assuming security controls described in documentation are actually implemented.
+**Prevention:** Always verify security controls (like input validation) with tests or manual verification, especially when relying on external documentation or memory. Implement strict schema validation (e.g., using Zod or Joi) for all API endpoints.
