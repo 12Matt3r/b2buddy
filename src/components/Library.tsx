@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import { Track, Playlist } from '../types';
 import { Music, List, Upload, FolderPlus, Search, Grid, Plus, Loader2, Video, ListVideo, Youtube } from 'lucide-react';
 
@@ -22,6 +22,60 @@ const MOCK_SAMPLES = [
     { id: 's4', name: 'Clap FX', url: 'https://tonejs.github.io/audio/drum-samples/CR78/tom1.mp3' },
 ];
 
+interface TrackItemProps {
+    track: Track;
+    onAddToQueue: (track: Track) => void;
+    onAddToPlaylist: (track: Track) => void;
+    onLoadTrack: (track: Track, deckId: number) => void;
+}
+
+const TrackItem = memo(({ track, onAddToQueue, onAddToPlaylist, onLoadTrack }: TrackItemProps) => (
+    <div className="p-3 hover:bg-gray-700 border-b border-gray-700/50 group">
+        <div className="flex justify-between items-start">
+            <div className="font-medium text-sm text-gray-200 flex items-center gap-2">
+                {track.type === 'video' ? <Video size={14} className="text-blue-400" /> :
+                    track.type === 'youtube' ? <Youtube size={14} className="text-red-500" /> :
+                    <Music size={14} className="text-gray-500" />}
+                {track.title}
+            </div>
+            <div className="flex gap-1">
+                <button
+                    onClick={() => onAddToQueue(track)}
+                    className="text-gray-500 hover:text-blue-400"
+                    title="Add to VJ Queue"
+                >
+                    <ListVideo size={14} />
+                </button>
+                <button
+                    onClick={() => onAddToPlaylist(track)}
+                    className="text-gray-500 hover:text-purple-400"
+                    title="Add to selected playlist"
+                >
+                    <Plus size={14} />
+                </button>
+            </div>
+        </div>
+        <div className="text-xs text-gray-500 flex justify-between mt-1">
+            <span>{track.artist}</span>
+            <span>{track.bpm} BPM • {track.key}</span>
+        </div>
+        <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+                onClick={() => onLoadTrack(track, 0)}
+                className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+            >
+                Load A
+            </button>
+            <button
+                onClick={() => onLoadTrack(track, 1)}
+                className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+            >
+                Load B
+            </button>
+        </div>
+    </div>
+));
+
 const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     const [activeTab, setActiveTab] = useState<'tracks' | 'playlists' | 'samples' | 'queue' | 'youtube'>('tracks');
     const [searchQuery, setSearchQuery] = useState('');
@@ -39,10 +93,10 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     // YouTube Input State
     const [ytInput, setYtInput] = useState('');
 
-    const filteredTracks = tracks.filter(t =>
+    const filteredTracks = useMemo(() => tracks.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.artist.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ), [tracks, searchQuery]);
 
     const handleCreatePlaylist = () => {
         const name = prompt('Enter playlist name:');
@@ -53,25 +107,25 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
         }
     };
 
-    const handleAddToPlaylist = (track: Track) => {
+    const handleAddToPlaylist = useCallback((track: Track) => {
         if (!selectedPlaylistId) {
             alert("Create or select a playlist first!");
             setActiveTab('playlists');
             return;
         }
 
-        setPlaylists(playlists.map(p => {
+        setPlaylists(prevPlaylists => prevPlaylists.map(p => {
             if (p.id === selectedPlaylistId) {
                 // Prevent duplicates? For now allow.
                 return { ...p, tracks: [...p.tracks, track] };
             }
             return p;
         }));
-    };
+    }, [selectedPlaylistId]);
 
-    const handleAddToQueue = (track: Track) => {
-        setVjQueue([...vjQueue, track]);
-    };
+    const handleAddToQueue = useCallback((track: Track) => {
+        setVjQueue(prevQueue => [...prevQueue, track]);
+    }, []);
 
     const handleRemoveFromQueue = (index: number) => {
         const newQueue = [...vjQueue];
@@ -208,50 +262,13 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                             </label>
                         </div>
                         {filteredTracks.map(track => (
-                            <div key={track.id} className="p-3 hover:bg-gray-700 border-b border-gray-700/50 group">
-                                <div className="flex justify-between items-start">
-                                    <div className="font-medium text-sm text-gray-200 flex items-center gap-2">
-                                        {track.type === 'video' ? <Video size={14} className="text-blue-400" /> :
-                                         track.type === 'youtube' ? <Youtube size={14} className="text-red-500" /> :
-                                         <Music size={14} className="text-gray-500" />}
-                                        {track.title}
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <button
-                                            onClick={() => handleAddToQueue(track)}
-                                            className="text-gray-500 hover:text-blue-400"
-                                            title="Add to VJ Queue"
-                                        >
-                                            <ListVideo size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleAddToPlaylist(track)}
-                                            className="text-gray-500 hover:text-purple-400"
-                                            title="Add to selected playlist"
-                                        >
-                                            <Plus size={14} />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="text-xs text-gray-500 flex justify-between mt-1">
-                                    <span>{track.artist}</span>
-                                    <span>{track.bpm} BPM • {track.key}</span>
-                                </div>
-                                <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={() => onLoadTrack(track, 0)}
-                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
-                                    >
-                                        Load A
-                                    </button>
-                                    <button
-                                        onClick={() => onLoadTrack(track, 1)}
-                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
-                                    >
-                                        Load B
-                                    </button>
-                                </div>
-                            </div>
+                            <TrackItem
+                                key={track.id}
+                                track={track}
+                                onAddToQueue={handleAddToQueue}
+                                onAddToPlaylist={handleAddToPlaylist}
+                                onLoadTrack={onLoadTrack}
+                            />
                         ))}
                     </div>
                 )}
