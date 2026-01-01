@@ -1,0 +1,4 @@
+## 2025-05-18 - Log Injection & Type Safety in Serverless Functions
+**Vulnerability:** The `mobile-api` Netlify function was vulnerable to Log Injection (CWE-117) because it logged user input (`command` and `userId`) directly to the console without sanitization, allowing attackers to forge log entries.
+**Learning:** Even simple logging statements in serverless functions can be a security risk if input isn't sanitized. Additionally, in ESM-based TypeScript projects, importing types from CommonJS modules (like `@netlify/functions`) requires explicit `import type` syntax to avoid runtime `SyntaxError` when using `ts-node` for verification.
+**Prevention:** Always sanitize inputs before logging (e.g., replace newlines). Use `import type { Handler }` for type-only imports in `netlify/functions` files to ensure compatibility with both build tools and local verification scripts.
