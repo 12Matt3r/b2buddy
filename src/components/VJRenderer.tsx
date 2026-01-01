@@ -80,6 +80,10 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             passthrough: createProgram(vsSource, fsPassthroughSource)
         };
 
+        // Cache Locations: Initialize as empty map structure
+        // We will lazy-load locations to be safe and maintainable
+        const locations: Record<string, { uniforms: Map<string, WebGLUniformLocation | null>, attribs: Map<string, number> }> = {};
+
         // Buffers
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -106,7 +110,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
         const h = canvas.height || 720;
 
         resources.current = {
-            gl, programs, positionBuffer, texCoordBuffer,
+            gl, programs, locations, positionBuffer, texCoordBuffer,
             textures: {
                 sourceA: createTexture(w, h),
                 sourceB: createTexture(w, h),
@@ -146,12 +150,36 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
     // Render Loop
     useEffect(() => {
         const render = () => {
-            const { gl, programs, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
+            const { gl, programs, locations, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
             if (!gl) return;
 
             const width = gl.canvas.width;
             const height = gl.canvas.height;
             gl.viewport(0, 0, width, height);
+
+            // Helpers for Cached Lookups
+            const getCachedUniform = (progName: string, prog: WebGLProgram, name: string) => {
+                if (!locations[progName]) {
+                    locations[progName] = { uniforms: new Map(), attribs: new Map() };
+                }
+                const cache = locations[progName].uniforms;
+                if (!cache.has(name)) {
+                    cache.set(name, gl.getUniformLocation(prog, name));
+                }
+                return cache.get(name);
+            };
+
+            const getCachedAttrib = (progName: string, prog: WebGLProgram, name: string) => {
+                if (!locations[progName]) {
+                    locations[progName] = { uniforms: new Map(), attribs: new Map() };
+                }
+                const cache = locations[progName].attribs;
+                if (!cache.has(name)) {
+                    cache.set(name, gl.getAttribLocation(prog, name));
+                }
+                return cache.get(name)!;
+            };
+
 
             // 1. Upload Video Frames to Textures
             // Only update if video has enough data
@@ -189,19 +217,19 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
                 else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Normal
 
                 // Bind Attributes
-                const pLoc = gl.getAttribLocation(programs.passthrough, 'a_position');
+                const pLoc = getCachedAttrib('passthrough', programs.passthrough, 'a_position');
                 gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
                 gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
                 gl.enableVertexAttribArray(pLoc);
 
-                const tLoc = gl.getAttribLocation(programs.passthrough, 'a_texCoord');
+                const tLoc = getCachedAttrib('passthrough', programs.passthrough, 'a_texCoord');
                 gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
                 gl.vertexAttribPointer(tLoc, 2, gl.FLOAT, false, 0, 0);
                 gl.enableVertexAttribArray(tLoc);
 
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, tex);
-                gl.uniform1i(gl.getUniformLocation(programs.passthrough, 'u_textureToDraw'), 0);
+                gl.uniform1i(getCachedUniform('passthrough', programs.passthrough, 'u_textureToDraw'), 0);
 
                 // Note: Opacity is tricky without shader support.
                 // We are stuck with provided shaders.
@@ -225,12 +253,13 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             const sourceTex = textures[currentSource]; // History
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, destFBO);
-            const prog = programs[effect] || programs.passthrough;
+            const activeEffectName = programs[effect] ? effect : 'passthrough';
+            const prog = programs[activeEffectName];
             gl.useProgram(prog);
 
             // Set Uniforms
             const setUniform = (name: string, val: number) => {
-                const loc = gl.getUniformLocation(prog, name);
+                const loc = getCachedUniform(activeEffectName, prog, name);
                 if (loc) gl.uniform1f(loc, val);
             };
 
@@ -250,11 +279,11 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, textures.mixed); // "Webcam" input is our mix
-            gl.uniform1i(gl.getUniformLocation(prog, 'u_webcamTexture'), 0);
+            gl.uniform1i(getCachedUniform(activeEffectName, prog, 'u_webcamTexture'), 0);
 
             gl.activeTexture(gl.TEXTURE1);
             gl.bindTexture(gl.TEXTURE_2D, sourceTex); // History input
-            gl.uniform1i(gl.getUniformLocation(prog, 'u_previousFrameTexture'), 1);
+            gl.uniform1i(getCachedUniform(activeEffectName, prog, 'u_previousFrameTexture'), 1);
 
             gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -263,7 +292,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             gl.useProgram(programs.passthrough);
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, textures[currentDest]); // Result
-            gl.uniform1i(gl.getUniformLocation(programs.passthrough, 'u_textureToDraw'), 0);
+            gl.uniform1i(getCachedUniform('passthrough', programs.passthrough, 'u_textureToDraw'), 0);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
 
             // Swap

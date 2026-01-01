@@ -1,0 +1,3 @@
+## 2024-05-24 - VJRenderer WebGL Optimization
+**Learning:** In WebGL applications, calling `gl.getUniformLocation` and `gl.getAttribLocation` inside the `requestAnimationFrame` loop is a significant performance anti-pattern. These calls involve string lookups and potential driver overhead.
+**Action:** Always cache these locations during initialization or use a lazy-loading map structure. In React, store this cache in a `useRef` to persist it across renders without causing re-renders. When implementing the cache, use a compound key (e.g., `programName + uniformName`) or nested maps to handle multiple shader programs safely.
