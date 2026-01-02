@@ -147,32 +147,52 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     return (
         <div className="bg-gray-800 h-full flex flex-col border-r border-gray-700 w-80">
             {/* Tabs */}
-            <div className="flex border-b border-gray-700">
+            <div className="flex border-b border-gray-700" role="tablist" aria-label="Library Sections">
                 <button
+                    role="tab"
+                    aria-selected={activeTab === 'tracks'}
+                    aria-label="Tracks"
+                    title="Tracks"
                     onClick={() => setActiveTab('tracks')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'tracks' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
                 >
                     <Music size={16} />
                 </button>
                 <button
+                    role="tab"
+                    aria-selected={activeTab === 'playlists'}
+                    aria-label="Playlists"
+                    title="Playlists"
                     onClick={() => setActiveTab('playlists')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'playlists' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
                 >
                     <List size={16} />
                 </button>
                 <button
+                    role="tab"
+                    aria-selected={activeTab === 'queue'}
+                    aria-label="VJ Queue"
+                    title="VJ Queue"
                     onClick={() => setActiveTab('queue')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'queue' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
                 >
                     <ListVideo size={16} />
                 </button>
                 <button
+                    role="tab"
+                    aria-selected={activeTab === 'youtube'}
+                    aria-label="YouTube Import"
+                    title="YouTube Import"
                     onClick={() => setActiveTab('youtube')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'youtube' ? 'bg-gray-700 text-red-500' : 'text-gray-400 hover:bg-gray-700'}`}
                 >
                     <Youtube size={16} />
                 </button>
                 <button
+                    role="tab"
+                    aria-selected={activeTab === 'samples'}
+                    aria-label="Samples"
+                    title="Samples"
                     onClick={() => setActiveTab('samples')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'samples' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
                 >
@@ -335,7 +355,11 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                          <button onClick={() => onLoadTrack(track, 0)} className="text-xs bg-purple-600 px-2 py-1 rounded">A</button>
                                          <button onClick={() => onLoadTrack(track, 1)} className="text-xs bg-purple-600 px-2 py-1 rounded">B</button>
                                     </div>
-                                    <button onClick={() => handleRemoveFromQueue(idx)} className="text-gray-500 hover:text-red-400">×</button>
+                                    <button
+                                        onClick={() => handleRemoveFromQueue(idx)}
+                                        className="text-gray-500 hover:text-red-400"
+                                        aria-label={`Remove ${track.title} from queue`}
+                                    >×</button>
                                 </div>
                             </div>
                         ))}
@@ -351,6 +375,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                  <button
                                     onClick={() => onLoadSample(sample.url, sample.name)}
                                     className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                    aria-label={`Load sample: ${sample.name}`}
                                  >
                                      +
                                  </button>
