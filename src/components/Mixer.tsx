@@ -48,6 +48,8 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                                 value={channels[index][band as keyof ChannelState]}
                                 onChange={(e) => setChannelState(index, { [band]: parseFloat(e.target.value) })}
                                 className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
+                                aria-label={`${deckLabel} ${typeLabel} ${getEqLabel(band)} EQ`}
+                                aria-orientation="vertical"
                             />
                         </div>
                     </div>
@@ -64,6 +66,8 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                             value={channels[index].volume}
                             onChange={(e) => setChannelState(index, { volume: parseFloat(e.target.value) })}
                             className="w-24 h-4 bg-gray-700 rounded-lg appearance-none cursor-pointer -rotate-90 origin-center"
+                            aria-label={`${deckLabel} ${typeLabel} ${isVideo ? 'Opacity' : 'Volume'}`}
+                            aria-orientation="vertical"
                         />
                     </div>
                     <span className="text-[10px] mt-1 text-gray-500">{isVideo ? 'OPAC' : 'VOL'}</span>
@@ -112,6 +116,8 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
                     value={crossfader}
                     onChange={(e) => setCrossfader(parseFloat(e.target.value))}
                     className="w-full h-6 bg-gray-900 rounded-full appearance-none cursor-pointer border border-gray-700"
+                    aria-label="Crossfader"
+                    aria-valuetext={crossfader === 0 ? "Center" : crossfader < 0 ? `Deck A ${Math.round(Math.abs(crossfader) * 100)}%` : `Deck B ${Math.round(crossfader * 100)}%`}
                 />
             </div>
         </div>
