@@ -233,13 +233,15 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
                             className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
+                            aria-label={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
+                            title={isDeckPlaying ? 'Pause' : 'Play'}
                         >
                             {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
                         </button>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-500">PITCH</span>
+                        <span className="text-xs font-mono text-gray-500" id={`pitch-label-${id}`}>PITCH</span>
                         <input
                             type="range"
                             min="-100"
@@ -247,6 +249,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             value={pitch}
                             onChange={handlePitchChange}
                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            aria-labelledby={`pitch-label-${id}`}
+                            aria-valuetext={`${pitch > 0 ? '+' : ''}${pitch}%`}
                         />
                         <span className="text-xs w-8 text-right font-mono text-gray-300">{pitch > 0 ? '+' : ''}{pitch}%</span>
                     </div>
