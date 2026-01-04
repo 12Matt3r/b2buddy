@@ -233,6 +233,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
                             className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
+                            aria-label={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
                         >
                             {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
                         </button>
@@ -247,6 +248,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             value={pitch}
                             onChange={handlePitchChange}
                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            aria-label={`Deck ${id} Pitch Control`}
                         />
                         <span className="text-xs w-8 text-right font-mono text-gray-300">{pitch > 0 ? '+' : ''}{pitch}%</span>
                     </div>
