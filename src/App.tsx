@@ -228,6 +228,7 @@ function App() {
                 onClick={toggleListening}
                 className={`p-2 rounded-full transition-all relative ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-700 text-gray-300 hover:text-white'}`}
                 title={lastTranscript || "Toggle Voice Control"}
+                aria-label="Toggle Voice Control"
               >
                   <Mic size={18} />
                   {isListening && <span className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full"></span>}
@@ -244,7 +245,7 @@ function App() {
         <div className="md:hidden h-14 bg-gray-800/90 border-b border-gray-700 flex justify-between items-center px-4 shrink-0 backdrop-blur-md">
             <h1 className="text-lg font-bold">B2Buddy</h1>
              <div className="flex gap-2">
-                 <button onClick={toggleListening} className={`p-2 rounded-full ${isListening ? 'bg-red-500 text-white' : 'bg-gray-700 text-gray-300'}`}><Mic size={16} /></button>
+                 <button onClick={toggleListening} className={`p-2 rounded-full ${isListening ? 'bg-red-500 text-white' : 'bg-gray-700 text-gray-300'}`} aria-label="Toggle Voice Control"><Mic size={16} /></button>
                  <button onClick={toggleB2B} className={`px-3 py-1 rounded-full text-xs font-bold border ${isB2BActive ? 'bg-red-500 border-red-400' : 'bg-gray-700 border-gray-600'}`}>
                      {isB2BActive ? 'B2B ON' : 'B2B OFF'}
                  </button>
