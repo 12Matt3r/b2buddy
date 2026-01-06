@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Layout, BarChart2, Radio, Swords, Mic } from 'lucide-react';
 import DJDeck, { DJDeckRef } from './components/DJDeck';
 import Mixer from './components/Mixer';
@@ -151,7 +151,9 @@ function App() {
     }
   }, [lastMessage]);
 
-  const handleLoadTrack = (track: Track, deckId: number) => {
+  // Memoized handlers to prevent unnecessary re-renders of the Library component
+  // during high-frequency updates (e.g. crossfader changes)
+  const handleLoadTrack = useCallback((track: Track, deckId: number) => {
     if (deckId === 0) {
         setDeckATrack(track);
         if (view === 'battle') {
@@ -162,9 +164,9 @@ function App() {
         setDeckBTrack(track);
     }
     aiService.logInteraction('load_track', `deck_${deckId}`, track.id);
-  };
+  }, [view]);
 
-  const handleLoadSample = (url: string, name: string) => { setPendingSample({ url, name }); };
+  const handleLoadSample = useCallback((url: string, name: string) => { setPendingSample({ url, name }); }, []);
   const handleSampleAssigned = () => { setPendingSample(null); };
 
   const handleDeckParamChange = (deckId: number, param: string, value: any) => {

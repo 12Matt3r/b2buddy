@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Track, Playlist } from '../types';
 import { Music, List, Upload, FolderPlus, Search, Grid, Plus, Loader2, Video, ListVideo, Youtube } from 'lucide-react';
 
@@ -39,10 +39,11 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     // YouTube Input State
     const [ytInput, setYtInput] = useState('');
 
-    const filteredTracks = tracks.filter(t =>
+    // Memoize filtered tracks to avoid recalculation on every render
+    const filteredTracks = useMemo(() => tracks.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.artist.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ), [tracks, searchQuery]);
 
     const handleCreatePlaylist = () => {
         const name = prompt('Enter playlist name:');
@@ -363,4 +364,5 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     );
 };
 
-export default Library;
+// Memoize the component to prevent re-renders when parent state (like crossfader) changes
+export default React.memo(Library);
