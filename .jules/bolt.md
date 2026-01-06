@@ -1,0 +1,3 @@
+## 2025-05-23 - App re-renders due to non-memoized handlers
+**Learning:** In this codebase, the root `App` component holds almost all state (mixer, decks, library views). Handlers passed to child components like `Library` were not memoized, causing the entire Library (and its lists) to re-render whenever high-frequency state like `crossfader` changed, even though the handlers themselves didn't depend on that state.
+**Action:** When adding state to root `App` components, aggressively use `useCallback` for handlers passed to complex children, especially if the root component has high-frequency state updates (like 60fps mixing controls).
