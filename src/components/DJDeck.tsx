@@ -222,6 +222,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         ref={canvasRef}
                         width={300}
                         height={60}
+                        role="img"
+                        aria-label="Audio waveform visualizer"
                         className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-black/50 rounded backdrop-blur-sm"
                     />
                 </div>
@@ -232,6 +234,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         <button
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
+                            aria-label={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
+                            title={isDeckPlaying ? "Pause" : "Play"}
                             className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
                         >
                             {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
@@ -239,13 +243,15 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-500">PITCH</span>
+                        <span className="text-xs font-mono text-gray-500" aria-hidden="true">PITCH</span>
                         <input
+                            id={`pitch-control-${id}`}
                             type="range"
                             min="-100"
                             max="100"
                             value={pitch}
                             onChange={handlePitchChange}
+                            aria-label={`Pitch Control Deck ${id}`}
                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                         />
                         <span className="text-xs w-8 text-right font-mono text-gray-300">{pitch > 0 ? '+' : ''}{pitch}%</span>
