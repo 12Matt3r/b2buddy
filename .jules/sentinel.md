@@ -1,0 +1,4 @@
+## 2024-05-24 - Log Injection in Serverless Functions
+**Vulnerability:** The `mobile-api` serverless function allowed Log Injection (CWE-117) because user-controlled inputs (`command` and `userId`) were logged directly without sanitization. An attacker could inject newline characters to forge log entries, potentially hiding malicious activity or confusing monitoring systems.
+**Learning:** In a serverless environment where logs are often the primary debugging tool, untrusted input in logs is a high-impact vector. Simple `console.log` statements can be weaponized if input isn't sanitized.
+**Prevention:** Always sanitize user inputs before logging. Specifically, replace newline characters (`\n`, `\r`) with a safe character (like `_`) to preserve log integrity. Enforce length limits to prevent log bloating.
