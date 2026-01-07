@@ -19,6 +19,13 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
     const glRef = useRef<WebGLRenderingContext | null>(null);
     const animationRef = useRef<number>();
 
+    // Optimization: Store mutable props in ref to prevent restarting the animation loop
+    const propsRef = useRef({ videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB });
+
+    useEffect(() => {
+        propsRef.current = { videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB };
+    }, [videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB]);
+
     // WebGL Resources
     const resources = useRef<any>({});
 
@@ -149,6 +156,9 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             const { gl, programs, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
             if (!gl) return;
 
+            // Read latest props from ref to avoid restarting loop
+            const { videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB } = propsRef.current;
+
             const width = gl.canvas.width;
             const height = gl.canvas.height;
             gl.viewport(0, 0, width, height);
@@ -275,7 +285,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
         animationRef.current = requestAnimationFrame(render);
         return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-    }, [effect, opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB]);
+    }, [effect]); // Only restart if effect shader program changes
 
     return (
         <canvas
