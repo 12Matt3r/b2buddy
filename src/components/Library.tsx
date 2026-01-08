@@ -151,30 +151,40 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                 <button
                     onClick={() => setActiveTab('tracks')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'tracks' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
+                    aria-label="Tracks"
+                    title="Tracks"
                 >
                     <Music size={16} />
                 </button>
                 <button
                     onClick={() => setActiveTab('playlists')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'playlists' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
+                    aria-label="Playlists"
+                    title="Playlists"
                 >
                     <List size={16} />
                 </button>
                 <button
                     onClick={() => setActiveTab('queue')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'queue' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
+                    aria-label="VJ Queue"
+                    title="VJ Queue"
                 >
                     <ListVideo size={16} />
                 </button>
                 <button
                     onClick={() => setActiveTab('youtube')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'youtube' ? 'bg-gray-700 text-red-500' : 'text-gray-400 hover:bg-gray-700'}`}
+                    aria-label="YouTube Import"
+                    title="YouTube Import"
                 >
                     <Youtube size={16} />
                 </button>
                 <button
                     onClick={() => setActiveTab('samples')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'samples' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
+                    aria-label="Samples"
+                    title="Samples"
                 >
                     <Grid size={16} />
                 </button>
@@ -187,6 +197,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                         <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
                         <input
                             type="text"
+                            aria-label="Search library"
                             placeholder="Search..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -220,6 +231,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                         <button
                                             onClick={() => handleAddToQueue(track)}
                                             className="text-gray-500 hover:text-blue-400"
+                                            aria-label="Add to VJ Queue"
                                             title="Add to VJ Queue"
                                         >
                                             <ListVideo size={14} />
@@ -227,6 +239,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                         <button
                                             onClick={() => handleAddToPlaylist(track)}
                                             className="text-gray-500 hover:text-purple-400"
+                                            aria-label="Add to selected playlist"
                                             title="Add to selected playlist"
                                         >
                                             <Plus size={14} />
@@ -241,12 +254,14 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                     <button
                                         onClick={() => onLoadTrack(track, 0)}
                                         className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                        aria-label={`Load ${track.title} to Deck A`}
                                     >
                                         Load A
                                     </button>
                                     <button
                                         onClick={() => onLoadTrack(track, 1)}
                                         className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                        aria-label={`Load ${track.title} to Deck B`}
                                     >
                                         Load B
                                     </button>
@@ -308,8 +323,8 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                             <div key={`${t.id}-${idx}`} className="text-xs text-gray-400 truncate flex justify-between group">
                                                 <span>{t.title}</span>
                                                 <div className="hidden group-hover:flex gap-1">
-                                                     <button onClick={(e) => { e.stopPropagation(); onLoadTrack(t, 0); }} className="hover:text-white">A</button>
-                                                     <button onClick={(e) => { e.stopPropagation(); onLoadTrack(t, 1); }} className="hover:text-white">B</button>
+                                                     <button onClick={(e) => { e.stopPropagation(); onLoadTrack(t, 0); }} className="hover:text-white" aria-label={`Load ${t.title} to Deck A`}>A</button>
+                                                     <button onClick={(e) => { e.stopPropagation(); onLoadTrack(t, 1); }} className="hover:text-white" aria-label={`Load ${t.title} to Deck B`}>B</button>
                                                 </div>
                                             </div>
                                         ))}
@@ -332,10 +347,10 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                 </div>
                                 <div className="flex gap-2">
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                         <button onClick={() => onLoadTrack(track, 0)} className="text-xs bg-purple-600 px-2 py-1 rounded">A</button>
-                                         <button onClick={() => onLoadTrack(track, 1)} className="text-xs bg-purple-600 px-2 py-1 rounded">B</button>
+                                         <button onClick={() => onLoadTrack(track, 0)} className="text-xs bg-purple-600 px-2 py-1 rounded" aria-label={`Load ${track.title} to Deck A`}>A</button>
+                                         <button onClick={() => onLoadTrack(track, 1)} className="text-xs bg-purple-600 px-2 py-1 rounded" aria-label={`Load ${track.title} to Deck B`}>B</button>
                                     </div>
-                                    <button onClick={() => handleRemoveFromQueue(idx)} className="text-gray-500 hover:text-red-400">×</button>
+                                    <button onClick={() => handleRemoveFromQueue(idx)} className="text-gray-500 hover:text-red-400" aria-label="Remove from queue">×</button>
                                 </div>
                             </div>
                         ))}
@@ -351,6 +366,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                  <button
                                     onClick={() => onLoadSample(sample.url, sample.name)}
                                     className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                     aria-label={`Load ${sample.name} to sampler`}
                                  >
                                      +
                                  </button>
