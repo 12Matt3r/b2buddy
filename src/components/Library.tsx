@@ -39,10 +39,11 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     // YouTube Input State
     const [ytInput, setYtInput] = useState('');
 
-    const filteredTracks = tracks.filter(t =>
+    // Bolt: Memoize filteredTracks to prevent recalculation on every render
+    const filteredTracks = React.useMemo(() => tracks.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.artist.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ), [tracks, searchQuery]);
 
     const handleCreatePlaylist = () => {
         const name = prompt('Enter playlist name:');
