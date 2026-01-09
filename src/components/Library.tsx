@@ -147,34 +147,54 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     return (
         <div className="bg-gray-800 h-full flex flex-col border-r border-gray-700 w-80">
             {/* Tabs */}
-            <div className="flex border-b border-gray-700">
+            <div className="flex border-b border-gray-700" role="tablist" aria-label="Library Navigation">
                 <button
                     onClick={() => setActiveTab('tracks')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'tracks' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
+                    role="tab"
+                    aria-selected={activeTab === 'tracks'}
+                    aria-label="Tracks"
+                    title="Tracks"
                 >
                     <Music size={16} />
                 </button>
                 <button
                     onClick={() => setActiveTab('playlists')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'playlists' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
+                    role="tab"
+                    aria-selected={activeTab === 'playlists'}
+                    aria-label="Playlists"
+                    title="Playlists"
                 >
                     <List size={16} />
                 </button>
                 <button
                     onClick={() => setActiveTab('queue')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'queue' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
+                    role="tab"
+                    aria-selected={activeTab === 'queue'}
+                    aria-label="VJ Queue"
+                    title="VJ Queue"
                 >
                     <ListVideo size={16} />
                 </button>
                 <button
                     onClick={() => setActiveTab('youtube')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'youtube' ? 'bg-gray-700 text-red-500' : 'text-gray-400 hover:bg-gray-700'}`}
+                    role="tab"
+                    aria-selected={activeTab === 'youtube'}
+                    aria-label="YouTube"
+                    title="YouTube"
                 >
                     <Youtube size={16} />
                 </button>
                 <button
                     onClick={() => setActiveTab('samples')}
                     className={`flex-1 p-3 text-sm font-semibold flex justify-center items-center gap-2 ${activeTab === 'samples' ? 'bg-gray-700 text-purple-400' : 'text-gray-400 hover:bg-gray-700'}`}
+                    role="tab"
+                    aria-selected={activeTab === 'samples'}
+                    aria-label="Samples"
+                    title="Samples"
                 >
                     <Grid size={16} />
                 </button>
@@ -191,6 +211,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-gray-900 border border-gray-700 rounded-md py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500"
+                            aria-label="Search tracks"
                         />
                     </div>
                 </div>
@@ -221,6 +242,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                             onClick={() => handleAddToQueue(track)}
                                             className="text-gray-500 hover:text-blue-400"
                                             title="Add to VJ Queue"
+                                            aria-label="Add to VJ Queue"
                                         >
                                             <ListVideo size={14} />
                                         </button>
@@ -228,6 +250,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                             onClick={() => handleAddToPlaylist(track)}
                                             className="text-gray-500 hover:text-purple-400"
                                             title="Add to selected playlist"
+                                            aria-label="Add to selected playlist"
                                         >
                                             <Plus size={14} />
                                         </button>
@@ -335,7 +358,7 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                          <button onClick={() => onLoadTrack(track, 0)} className="text-xs bg-purple-600 px-2 py-1 rounded">A</button>
                                          <button onClick={() => onLoadTrack(track, 1)} className="text-xs bg-purple-600 px-2 py-1 rounded">B</button>
                                     </div>
-                                    <button onClick={() => handleRemoveFromQueue(idx)} className="text-gray-500 hover:text-red-400">×</button>
+                                    <button onClick={() => handleRemoveFromQueue(idx)} className="text-gray-500 hover:text-red-400" aria-label="Remove from queue" title="Remove from queue">×</button>
                                 </div>
                             </div>
                         ))}
@@ -351,6 +374,8 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                  <button
                                     onClick={() => onLoadSample(sample.url, sample.name)}
                                     className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                    aria-label={`Load sample ${sample.name}`}
+                                    title={`Load ${sample.name}`}
                                  >
                                      +
                                  </button>
