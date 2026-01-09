@@ -29,6 +29,27 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
         displacement: 0.01, feedback: 0.2, threshold: 0.5, brightness: 0.0, contrast: 1.0, saturation: 1.0
     });
 
+    // Refs for props to avoid re-triggering the render loop
+    const propsRef = useRef({
+        videoSourceA,
+        videoSourceB,
+        opacityA,
+        opacityB,
+        mixBlendModeB
+    });
+
+    // Update refs when props change
+    useEffect(() => {
+        propsRef.current = {
+            videoSourceA,
+            videoSourceB,
+            opacityA,
+            opacityB,
+            mixBlendModeB
+        };
+    }, [videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB]);
+
+
     // Expose controls to parent
     useImperativeHandle(ref, () => ({
         setEffect: (e) => setEffectState(e),
@@ -148,6 +169,9 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
         const render = () => {
             const { gl, programs, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
             if (!gl) return;
+
+            // Read current props from ref
+            const { videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB } = propsRef.current;
 
             const width = gl.canvas.width;
             const height = gl.canvas.height;
@@ -275,7 +299,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
         animationRef.current = requestAnimationFrame(render);
         return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-    }, [effect, opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB]);
+    }, [effect]); // Removed unstable props: opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB
 
     return (
         <canvas
@@ -283,6 +307,8 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             className="w-full h-full object-cover"
             width={1280}
             height={720}
+            role="img"
+            aria-label="VJ Visuals Output"
         />
     );
 });
