@@ -389,4 +389,5 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     );
 };
 
-export default Library;
+// Memoized to prevent re-renders when parent state (like crossfader) changes
+export default React.memo(Library);
