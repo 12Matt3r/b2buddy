@@ -222,6 +222,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         ref={canvasRef}
                         width={300}
                         height={60}
+                        role="img"
+                        aria-label={`Waveform visualization for Deck ${id}`}
                         className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-black/50 rounded backdrop-blur-sm"
                     />
                 </div>
@@ -232,9 +234,11 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         <button
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
-                            className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
+                            aria-label={`${isDeckPlaying ? 'Pause' : 'Play'} Deck ${id}`}
+                            title={`${isDeckPlaying ? 'Pause' : 'Play'} Deck ${id}`}
+                            className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800`}
                         >
-                            {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
+                            {isDeckPlaying ? <Pause size={24} aria-hidden="true" /> : <Play size={24} aria-hidden="true" />}
                         </button>
                     </div>
 
@@ -246,7 +250,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             max="100"
                             value={pitch}
                             onChange={handlePitchChange}
-                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            aria-label={`Deck ${id} Pitch Control`}
+                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                         <span className="text-xs w-8 text-right font-mono text-gray-300">{pitch > 0 ? '+' : ''}{pitch}%</span>
                     </div>
