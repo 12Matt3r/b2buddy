@@ -1,4 +1,4 @@
-import { Handler } from '@netlify/functions';
+import type { Handler } from '@netlify/functions';
 
 export const handler: Handler = async (event, context) => {
     if (event.httpMethod !== 'POST') {
@@ -6,17 +6,32 @@ export const handler: Handler = async (event, context) => {
     }
 
     try {
-        const { command, userId, payload } = JSON.parse(event.body || '{}');
+        const body = JSON.parse(event.body || '{}');
+        const { command, userId, payload } = body;
+
+        // Input Validation
+        if (typeof command !== 'string' || typeof userId !== 'string') {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Invalid input format' }) };
+        }
+
+        // Length Limits (DoS prevention)
+        if (command.length > 100 || userId.length > 50) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Input too long' }) };
+        }
+
+        // Sanitization (Log Injection Prevention)
+        const safeCommand = command.replace(/[\n\r]/g, '_');
+        const safeUserId = userId.replace(/[\n\r]/g, '_');
 
         // Handle mobile commands like "Send Track to Deck A"
         // In a real app, this would use WebSockets (e.g. Pusher, Ably) to push to the desktop client
-        console.log(`Received mobile command: ${command} from ${userId}`);
+        console.log(`Received mobile command: ${safeCommand} from ${safeUserId}`);
 
         return {
             statusCode: 200,
             body: JSON.stringify({
                 success: true,
-                message: `Command ${command} processed`,
+                message: `Command ${safeCommand} processed`,
                 timestamp: Date.now()
             }),
         };
