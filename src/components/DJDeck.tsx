@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef, useState, memo } from 'react';
 import { Play, Pause, Disc, Video, Youtube } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { Track } from '../types';
@@ -19,7 +19,7 @@ interface DJDeckProps {
     onParameterChange: (param: string, value: any) => void;
 }
 
-const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume, onParameterChange }, ref) => {
+const DJDeck = memo(forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume, onParameterChange }, ref) => {
 
     const isVideo = track?.type === 'video';
     const isYouTube = track?.type === 'youtube';
@@ -258,6 +258,6 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
             </div>
         </div>
     );
-});
+}));
 
 export default DJDeck;
