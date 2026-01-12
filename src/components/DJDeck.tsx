@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState, useId } from 'react';
 import { Play, Pause, Disc, Video, Youtube } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { Track } from '../types';
@@ -43,6 +43,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
             : isYouTube
                 ? !!track?.youtubeUrl
                 : false;
+
+    const pitchId = useId();
 
     // --- Imperative Handle ---
     useImperativeHandle(ref, () => ({
@@ -232,20 +234,23 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         <button
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
+                            aria-label={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
+                            title={isDeckPlaying ? "Pause" : "Play"}
                             className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
                         >
-                            {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
+                            {isDeckPlaying ? <Pause size={24} aria-hidden="true" /> : <Play size={24} aria-hidden="true" />}
                         </button>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-500">PITCH</span>
+                        <span className="text-xs font-mono text-gray-500" id={pitchId}>PITCH</span>
                         <input
                             type="range"
                             min="-100"
                             max="100"
                             value={pitch}
                             onChange={handlePitchChange}
+                            aria-labelledby={pitchId}
                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                         />
                         <span className="text-xs w-8 text-right font-mono text-gray-300">{pitch > 0 ? '+' : ''}{pitch}%</span>
