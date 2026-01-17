@@ -31,6 +31,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const animationRef = useRef<number>();
+    const isActiveRef = useRef(isActive);
 
     const [mediaPlaying, setMediaPlaying] = useState(false);
 
@@ -80,6 +81,11 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
         onParameterChange('playing', isDeckPlaying);
     }, [isDeckPlaying, onParameterChange]);
 
+    // Keep isActiveRef updated
+    useEffect(() => {
+        isActiveRef.current = isActive;
+    }, [isActive]);
+
     // --- Video Element Control ---
     useEffect(() => {
         if (isVideo && videoRef.current) {
@@ -105,7 +111,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                 const data = getWaveformData();
                 if (data) {
                     ctx.lineWidth = 2;
-                    ctx.strokeStyle = isActive ? '#a855f7' : '#6b7280';
+                    ctx.strokeStyle = isActiveRef.current ? '#a855f7' : '#6b7280';
                     ctx.beginPath();
 
                     const sliceWidth = width * 1.0 / data.length;
@@ -139,7 +145,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, [isDeckPlaying, getWaveformData, isActive, isAudio, isYouTube]);
+    }, [isDeckPlaying, getWaveformData, isAudio, isYouTube]);
 
     // --- Handlers ---
     const handlePlay = () => {
