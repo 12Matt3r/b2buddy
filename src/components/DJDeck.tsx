@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState, useId } from 'react';
 import { Play, Pause, Disc, Video, Youtube } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { Track } from '../types';
@@ -33,6 +33,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
     const animationRef = useRef<number>();
 
     const [mediaPlaying, setMediaPlaying] = useState(false);
+    const pitchId = useId();
 
     const isDeckPlaying = isAudio ? isPlaying : mediaPlaying;
 
@@ -213,9 +214,9 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                 {/* Visualizer Area */}
                 <div className="relative mb-6">
                     <div className={`w-48 h-48 mx-auto rounded-full border-4 border-gray-600 flex items-center justify-center relative overflow-hidden ${isDeckPlaying ? 'animate-spin-slow' : ''}`}>
-                        {isVideo ? <Video size={80} className="text-blue-500" /> :
-                         isYouTube ? <Youtube size={80} className="text-red-500" /> :
-                         <Disc size={120} className="text-gray-500" />}
+                        {isVideo ? <Video size={80} className="text-blue-500" aria-hidden="true" /> :
+                         isYouTube ? <Youtube size={80} className="text-red-500" aria-hidden="true" /> :
+                         <Disc size={120} className="text-gray-500" aria-hidden="true" />}
                     </div>
                     {/* Overlay Waveform Canvas */}
                     <canvas
@@ -223,6 +224,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         width={300}
                         height={60}
                         className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-black/50 rounded backdrop-blur-sm"
+                        role="img"
+                        aria-label={`Waveform visualization for Deck ${id}`}
                     />
                 </div>
 
@@ -233,22 +236,26 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
                             className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
+                            aria-label={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
+                            title={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
                         >
-                            {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
+                            {isDeckPlaying ? <Pause size={24} aria-hidden="true" /> : <Play size={24} aria-hidden="true" />}
                         </button>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-500">PITCH</span>
+                        <label htmlFor={pitchId} className="text-xs font-mono text-gray-500">PITCH</label>
                         <input
+                            id={pitchId}
                             type="range"
                             min="-100"
                             max="100"
                             value={pitch}
                             onChange={handlePitchChange}
-                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            aria-label={`Pitch Control for Deck ${id}`}
                         />
-                        <span className="text-xs w-8 text-right font-mono text-gray-300">{pitch > 0 ? '+' : ''}{pitch}%</span>
+                        <span className="text-xs w-8 text-right font-mono text-gray-300" aria-hidden="true">{pitch > 0 ? '+' : ''}{pitch}%</span>
                     </div>
 
                     <div className="text-center text-sm font-mono text-purple-400 bg-purple-900/20 py-1 rounded">
