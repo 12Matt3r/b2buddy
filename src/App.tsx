@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Layout, BarChart2, Radio, Swords, Mic } from 'lucide-react';
 import DJDeck, { DJDeckRef } from './components/DJDeck';
 import Mixer from './components/Mixer';
@@ -108,9 +108,10 @@ function App() {
       }
   };
 
-  const handleTriggerDrumVideo = (url: string) => {
+  // Memoized handlers to prevent unnecessary re-renders in children
+  const handleTriggerDrumVideo = useCallback((url: string) => {
       setActiveDrumVideo(url);
-  };
+  }, []);
 
   const toggleVJEffect = () => {
       const effects = ['none', 'datamosh', 'pixelsort', 'feedback', 'colorshift'] as const;
@@ -151,7 +152,7 @@ function App() {
     }
   }, [lastMessage]);
 
-  const handleLoadTrack = (track: Track, deckId: number) => {
+  const handleLoadTrack = useCallback((track: Track, deckId: number) => {
     if (deckId === 0) {
         setDeckATrack(track);
         if (view === 'battle') {
@@ -162,18 +163,21 @@ function App() {
         setDeckBTrack(track);
     }
     aiService.logInteraction('load_track', `deck_${deckId}`, track.id);
-  };
+  }, [view]);
 
-  const handleLoadSample = (url: string, name: string) => { setPendingSample({ url, name }); };
-  const handleSampleAssigned = () => { setPendingSample(null); };
+  const handleLoadSample = useCallback((url: string, name: string) => { setPendingSample({ url, name }); }, []);
+  const handleSampleAssigned = useCallback(() => { setPendingSample(null); }, []);
 
-  const handleDeckParamChange = (deckId: number, param: string, value: any) => {
+  const handleDeckParamChange = useCallback((deckId: number, param: string, value: any) => {
       if (param === 'playing') {
           if (deckId === 0) setDeckAPlaying(!!value);
           else setDeckBPlaying(!!value);
       }
       aiService.logInteraction('play_pause', `deck_${deckId}_${param}`, value);
-  };
+  }, []);
+
+  const onDeckAParamChange = useCallback((p: string, v: any) => handleDeckParamChange(0, p, v), [handleDeckParamChange]);
+  const onDeckBParamChange = useCallback((p: string, v: any) => handleDeckParamChange(1, p, v), [handleDeckParamChange]);
 
   return (
     <div className="h-screen bg-gray-900 text-white flex flex-col md:flex-row overflow-hidden font-sans relative">
@@ -262,7 +266,7 @@ function App() {
                         track={deckATrack}
                         isActive={crossfader < 0.5}
                         volume={deckAVolume}
-                        onParameterChange={(p, v) => handleDeckParamChange(0, p, v)}
+                        onParameterChange={onDeckAParamChange}
                     />
                     <div className="order-last md:order-none w-full md:w-auto flex justify-center">
                         <Mixer
@@ -278,7 +282,7 @@ function App() {
                         track={deckBTrack}
                         isActive={crossfader > -0.5}
                         volume={deckBVolume}
-                        onParameterChange={(p, v) => handleDeckParamChange(1, p, v)}
+                        onParameterChange={onDeckBParamChange}
                     />
                 </div>
                 <div className="flex flex-col md:flex-row gap-6 p-4 md:px-6 md:pb-6">
@@ -304,7 +308,7 @@ function App() {
                 <div className="md:hidden h-full"><BattleArena /></div>
                 <div className="hidden md:block h-full">
                      <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-6 p-4 md:p-6">
-                        <DJDeck id={1} track={deckATrack} isActive={crossfader < 0.5} volume={deckAVolume} onParameterChange={(p, v) => handleDeckParamChange(0, p, v)} />
+                        <DJDeck id={1} track={deckATrack} isActive={crossfader < 0.5} volume={deckAVolume} onParameterChange={onDeckAParamChange} />
                         <div className="order-last md:order-none w-full md:w-auto flex justify-center">
                             <Mixer
                                 crossfader={crossfader}
@@ -313,7 +317,7 @@ function App() {
                                 setChannelState={handleChannelStateChange}
                             />
                         </div>
-                        <DJDeck id={2} track={deckBTrack} isActive={crossfader > -0.5} volume={deckBVolume} onParameterChange={(p, v) => handleDeckParamChange(1, p, v)} />
+                        <DJDeck id={2} track={deckBTrack} isActive={crossfader > -0.5} volume={deckBVolume} onParameterChange={onDeckBParamChange} />
                     </div>
                 </div>
             </div>

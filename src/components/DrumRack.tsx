@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import * as Tone from 'tone';
 
 // Extended type for samples including optional video
@@ -132,4 +132,4 @@ const DrumRack: React.FC<DrumRackProps> = ({ pendingSample, onSampleAssigned, on
     );
 };
 
-export default DrumRack;
+export default memo(DrumRack);

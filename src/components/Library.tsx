@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { Track, Playlist } from '../types';
 import { Music, List, Upload, FolderPlus, Search, Grid, Plus, Loader2, Video, ListVideo, Youtube } from 'lucide-react';
 
@@ -389,4 +389,4 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     );
 };
 
-export default Library;
+export default memo(Library);
