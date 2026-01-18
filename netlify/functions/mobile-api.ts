@@ -6,7 +6,24 @@ export const handler: Handler = async (event, context) => {
     }
 
     try {
-        const { command, userId, payload } = JSON.parse(event.body || '{}');
+        const body = JSON.parse(event.body || '{}');
+        let { command, userId, payload } = body;
+
+        // Security: Input Sanitization & Validation
+        // 1. Sanitize to prevent Log Injection (CWE-117)
+        // 2. Limit length to prevent DoS
+
+        if (typeof command === 'string') {
+            command = command.replace(/[\n\r]/g, '_').substring(0, 100);
+        } else {
+            command = 'unknown';
+        }
+
+        if (typeof userId === 'string') {
+            userId = userId.replace(/[\n\r]/g, '_').substring(0, 50);
+        } else {
+            userId = 'anonymous';
+        }
 
         // Handle mobile commands like "Send Track to Deck A"
         // In a real app, this would use WebSockets (e.g. Pusher, Ably) to push to the desktop client
