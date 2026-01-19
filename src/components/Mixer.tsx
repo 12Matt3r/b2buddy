@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { ChannelState } from '../types';
 
 interface MixerProps {
@@ -8,7 +8,7 @@ interface MixerProps {
     setChannelState: (index: number, state: Partial<ChannelState>) => void;
 }
 
-const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setChannelState }) => {
+const Mixer: React.FC<MixerProps> = memo(({ crossfader, setCrossfader, channels, setChannelState }) => {
 
     const renderChannel = (index: number) => {
         // Channel Mapping:
@@ -116,6 +116,6 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
             </div>
         </div>
     );
-};
+});
 
 export default Mixer;
