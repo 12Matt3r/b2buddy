@@ -261,16 +261,18 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                     <span>{track.artist}</span>
                                     <span>{track.bpm} BPM • {track.key}</span>
                                 </div>
-                                <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => onLoadTrack(track, 0)}
-                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                        aria-label={`Load ${track.title} to Deck A`}
                                     >
                                         Load A
                                     </button>
                                     <button
                                         onClick={() => onLoadTrack(track, 1)}
-                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                        aria-label={`Load ${track.title} to Deck B`}
                                     >
                                         Load B
                                     </button>
