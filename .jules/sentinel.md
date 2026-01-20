@@ -1,0 +1,4 @@
+## 2024-05-23 - Log Injection (CWE-117) in Serverless Functions
+**Vulnerability:** The `mobile-api` Netlify function logged user-controlled inputs (`command`, `userId`) directly to the console without sanitization. This allowed attackers to inject fake log entries by including newline characters (`\n` or `\r`) in the payload.
+**Learning:** Even in "internal" or "mock" APIs, logging raw user input is a security risk. Log Injection can disrupt monitoring, hide attacks, or confuse log parsers. In serverless environments, where logs are often the primary debugging tool, integrity is crucial.
+**Prevention:** Always sanitize inputs before logging. Specifically, strip or replace newline characters. Additionally, enforcing length limits on logged inputs prevents Denial of Service (DoS) attacks that attempt to flood logs with massive payloads.
