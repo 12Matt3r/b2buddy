@@ -29,6 +29,15 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
         displacement: 0.01, feedback: 0.2, threshold: 0.5, brightness: 0.0, contrast: 1.0, saturation: 1.0
     });
 
+    // Store latest props in a ref to avoid restarting the loop
+    const propsRef = useRef({
+        opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB, effect
+    });
+
+    useEffect(() => {
+        propsRef.current = { opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB, effect };
+    }, [opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB, effect]);
+
     // Expose controls to parent
     useImperativeHandle(ref, () => ({
         setEffect: (e) => setEffectState(e),
@@ -148,6 +157,9 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
         const render = () => {
             const { gl, programs, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
             if (!gl) return;
+
+            // Access latest props from ref
+            const { opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB, effect } = propsRef.current;
 
             const width = gl.canvas.width;
             const height = gl.canvas.height;
@@ -275,7 +287,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
         animationRef.current = requestAnimationFrame(render);
         return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-    }, [effect, opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB]);
+    }, []); // Empty dependency array ensures loop doesn't restart
 
     return (
         <canvas
