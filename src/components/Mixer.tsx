@@ -118,4 +118,5 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
     );
 };
 
-export default Mixer;
+// Memoized to prevent re-renders when unrelated state (like deck playback) changes
+export default React.memo(Mixer);
