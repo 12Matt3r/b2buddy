@@ -260,4 +260,5 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
     );
 });
 
-export default DJDeck;
+// Memoized to prevent re-renders when unrelated state changes
+export default React.memo(DJDeck);
