@@ -27,7 +27,7 @@ interface DrumRackProps {
     onTriggerVideo?: (url: string) => void; // Callback to trigger video overlay
 }
 
-const DrumRack: React.FC<DrumRackProps> = ({ pendingSample, onSampleAssigned, onTriggerVideo }) => {
+const DrumRack: React.FC<DrumRackProps> = React.memo(({ pendingSample, onSampleAssigned, onTriggerVideo }) => {
     const [sampler, setSampler] = useState<Tone.Sampler | null>(null);
     const [activePad, setActivePad] = useState<string | null>(null);
     const [padConfig, setPadConfig] = useState<DrumSample[]>(DEFAULT_SAMPLES);
@@ -130,6 +130,6 @@ const DrumRack: React.FC<DrumRackProps> = ({ pendingSample, onSampleAssigned, on
             </div>
         </div>
     );
-};
+});
 
 export default DrumRack;

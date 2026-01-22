@@ -19,7 +19,7 @@ interface DJDeckProps {
     onParameterChange: (param: string, value: any) => void;
 }
 
-const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume, onParameterChange }, ref) => {
+const DJDeck = React.memo(forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume, onParameterChange }, ref) => {
 
     const isVideo = track?.type === 'video';
     const isYouTube = track?.type === 'youtube';
@@ -258,6 +258,6 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
             </div>
         </div>
     );
-});
+}));
 
 export default DJDeck;

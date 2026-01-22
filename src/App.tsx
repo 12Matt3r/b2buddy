@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Layout, BarChart2, Radio, Swords, Mic } from 'lucide-react';
 import DJDeck, { DJDeckRef } from './components/DJDeck';
 import Mixer from './components/Mixer';
@@ -48,7 +48,8 @@ function App() {
 
   // --- Volume Calculation ---
   // Calculates the effective volume for a deck based on its Channel Fader AND Crossfader
-  const calculateEffectiveVolume = (channelIndex: number, isDeckB: boolean) => {
+  // Memoized to prevent recalculation inside render unless needed
+  const calculateEffectiveVolume = useCallback((channelIndex: number, isDeckB: boolean) => {
       const channelVol = channels[channelIndex].volume;
       let crossfaderGain = 1;
 
@@ -59,46 +60,48 @@ function App() {
       }
 
       return channelVol * crossfaderGain;
-  };
+  }, [channels, crossfader]);
 
   const deckAVolume = calculateEffectiveVolume(0, false);
   const deckBVolume = calculateEffectiveVolume(2, true);
 
   // --- Handlers ---
 
-  const handleCrossfaderChange = (val: number) => {
+  const handleCrossfaderChange = useCallback((val: number) => {
     setCrossfader(Math.max(-1, Math.min(1, val)));
     aiService.logInteraction('fader', 'crossfader', val);
-  };
+  }, []);
 
-  const handleChannelStateChange = (index: number, newState: Partial<ChannelState>) => {
-      const newChannels = [...channels] as [ChannelState, ChannelState, ChannelState, ChannelState];
-      newChannels[index] = { ...newChannels[index], ...newState };
-      setChannels(newChannels);
+  const handleChannelStateChange = useCallback((index: number, newState: Partial<ChannelState>) => {
+      setChannels(prev => {
+          const newChannels = [...prev] as [ChannelState, ChannelState, ChannelState, ChannelState];
+          newChannels[index] = { ...newChannels[index], ...newState };
+          return newChannels;
+      });
 
       if (newState.volume !== undefined) {
           aiService.logInteraction('fader', `ch_${index}_vol`, newState.volume);
       }
-  };
+  }, []);
 
-  const toggleDeckPlay = (deckId: number) => {
+  const toggleDeckPlay = useCallback((deckId: number) => {
       if (deckId === 0 && deckARef.current) {
           deckARef.current.togglePlay();
       } else if (deckId === 1 && deckBRef.current) {
           deckBRef.current.togglePlay();
       }
-  };
+  }, []); // Refs are stable
 
-  const handleAIAction = (action: AIAction) => {
+  const handleAIAction = useCallback((action: AIAction) => {
       if (action.type === 'LOAD_TRACK' && action.deckId !== undefined) {
           if (action.deckId === 1) setDeckBTrack(action.payload);
           else setDeckATrack(action.payload);
       } else if (action.type === 'CROSSFADER' && action.value !== undefined) {
           setCrossfader(action.value);
       }
-  };
+  }, []);
 
-  const toggleB2B = () => {
+  const toggleB2B = useCallback(() => {
       if (isB2BActive) {
           aiB2BService.stopB2B();
           setIsB2BActive(false);
@@ -106,29 +109,68 @@ function App() {
           aiB2BService.startB2B(handleAIAction);
           setIsB2BActive(true);
       }
-  };
+  }, [isB2BActive, handleAIAction]);
 
-  const handleTriggerDrumVideo = (url: string) => {
+  const handleTriggerDrumVideo = useCallback((url: string) => {
       setActiveDrumVideo(url);
-  };
+  }, []);
 
-  const toggleVJEffect = () => {
-      const effects = ['none', 'datamosh', 'pixelsort', 'feedback', 'colorshift'] as const;
-      const next = effects[(effects.indexOf(activeVJEFFECT) + 1) % effects.length];
-      setActiveVJEFFECT(next);
-  };
+  const toggleVJEffect = useCallback(() => {
+      setActiveVJEFFECT(prev => {
+          const effects = ['none', 'datamosh', 'pixelsort', 'feedback', 'colorshift'] as const;
+          const next = effects[(effects.indexOf(prev) + 1) % effects.length];
+          return next;
+      });
+  }, []);
+
+  // We need to handle the battle submission logic separately or use a ref for view
+  const viewRef = useRef(view);
+  useEffect(() => { viewRef.current = view; }, [view]);
+
+  // Enhanced handleLoadTrack that uses ref for view to be stable
+  const handleLoadTrack = useCallback((track: Track, deckId: number) => {
+      if (deckId === 0) {
+          setDeckATrack(track);
+          if (viewRef.current === 'battle') {
+              battleService.submitPlayerTurn(track);
+          }
+      } else {
+          setDeckBTrack(track);
+      }
+      aiService.logInteraction('load_track', `deck_${deckId}`, track.id);
+  }, []);
+
+
+  const handleLoadSample = useCallback((url: string, name: string) => { setPendingSample({ url, name }); }, []);
+  const handleSampleAssigned = useCallback(() => { setPendingSample(null); }, []);
+
+  const handleDeckParamChange = useCallback((deckId: number, param: string, value: any) => {
+      if (param === 'playing') {
+          if (deckId === 0) setDeckAPlaying(!!value);
+          else setDeckBPlaying(!!value);
+      }
+      aiService.logInteraction('play_pause', `deck_${deckId}_${param}`, value);
+  }, []);
+
+  const handleDeckParamChange0 = useCallback((p: string, v: any) => handleDeckParamChange(0, p, v), [handleDeckParamChange]);
+  const handleDeckParamChange1 = useCallback((p: string, v: any) => handleDeckParamChange(1, p, v), [handleDeckParamChange]);
+
 
   // --- Controls ---
 
-  useKeyboardControls({
+  // Memoize key map to prevent re-attaching listeners on every render
+  const keyboardControls = useMemo(() => ({
       'ArrowLeft': () => handleCrossfaderChange(crossfader - 0.1),
       'ArrowRight': () => handleCrossfaderChange(crossfader + 0.1),
       'c': () => handleCrossfaderChange(0),
       'Space': () => toggleDeckPlay(0),
       'Shift+Space': () => toggleDeckPlay(1),
-  });
+  }), [crossfader, handleCrossfaderChange, toggleDeckPlay]); // crossfader is needed here because it's used in closure
 
-  const { isListening, toggleListening, lastTranscript } = useVoiceControl({
+  useKeyboardControls(keyboardControls);
+
+  // Memoize voice commands
+  const voiceCommands = useMemo(() => ({
       'play deck one': () => toggleDeckPlay(0),
       'stop deck one': () => toggleDeckPlay(0),
       'play deck two': () => toggleDeckPlay(1),
@@ -138,7 +180,9 @@ function App() {
       'center': () => handleCrossfaderChange(0),
       'start battle': () => setView('battle'),
       'studio mode': () => setView('studio'),
-  });
+  }), [toggleDeckPlay, handleCrossfaderChange]);
+
+  const { isListening, toggleListening, lastTranscript } = useVoiceControl(voiceCommands);
 
   // --- Effects ---
 
@@ -149,31 +193,8 @@ function App() {
           handleCrossfaderChange(normalized);
        }
     }
-  }, [lastMessage]);
+  }, [lastMessage, handleCrossfaderChange]);
 
-  const handleLoadTrack = (track: Track, deckId: number) => {
-    if (deckId === 0) {
-        setDeckATrack(track);
-        if (view === 'battle') {
-            battleService.submitPlayerTurn(track);
-        }
-    }
-    else {
-        setDeckBTrack(track);
-    }
-    aiService.logInteraction('load_track', `deck_${deckId}`, track.id);
-  };
-
-  const handleLoadSample = (url: string, name: string) => { setPendingSample({ url, name }); };
-  const handleSampleAssigned = () => { setPendingSample(null); };
-
-  const handleDeckParamChange = (deckId: number, param: string, value: any) => {
-      if (param === 'playing') {
-          if (deckId === 0) setDeckAPlaying(!!value);
-          else setDeckBPlaying(!!value);
-      }
-      aiService.logInteraction('play_pause', `deck_${deckId}_${param}`, value);
-  };
 
   return (
     <div className="h-screen bg-gray-900 text-white flex flex-col md:flex-row overflow-hidden font-sans relative">
@@ -262,7 +283,7 @@ function App() {
                         track={deckATrack}
                         isActive={crossfader < 0.5}
                         volume={deckAVolume}
-                        onParameterChange={(p, v) => handleDeckParamChange(0, p, v)}
+                        onParameterChange={handleDeckParamChange0}
                     />
                     <div className="order-last md:order-none w-full md:w-auto flex justify-center">
                         <Mixer
@@ -278,7 +299,7 @@ function App() {
                         track={deckBTrack}
                         isActive={crossfader > -0.5}
                         volume={deckBVolume}
-                        onParameterChange={(p, v) => handleDeckParamChange(1, p, v)}
+                        onParameterChange={handleDeckParamChange1}
                     />
                 </div>
                 <div className="flex flex-col md:flex-row gap-6 p-4 md:px-6 md:pb-6">
@@ -304,7 +325,7 @@ function App() {
                 <div className="md:hidden h-full"><BattleArena /></div>
                 <div className="hidden md:block h-full">
                      <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-6 p-4 md:p-6">
-                        <DJDeck id={1} track={deckATrack} isActive={crossfader < 0.5} volume={deckAVolume} onParameterChange={(p, v) => handleDeckParamChange(0, p, v)} />
+                        <DJDeck id={1} ref={deckARef} track={deckATrack} isActive={crossfader < 0.5} volume={deckAVolume} onParameterChange={handleDeckParamChange0} />
                         <div className="order-last md:order-none w-full md:w-auto flex justify-center">
                             <Mixer
                                 crossfader={crossfader}
@@ -313,7 +334,7 @@ function App() {
                                 setChannelState={handleChannelStateChange}
                             />
                         </div>
-                        <DJDeck id={2} track={deckBTrack} isActive={crossfader > -0.5} volume={deckBVolume} onParameterChange={(p, v) => handleDeckParamChange(1, p, v)} />
+                        <DJDeck id={2} ref={deckBRef} track={deckBTrack} isActive={crossfader > -0.5} volume={deckBVolume} onParameterChange={handleDeckParamChange1} />
                     </div>
                 </div>
             </div>
