@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState, useId } from 'react';
 import { Play, Pause, Disc, Video, Youtube } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { Track } from '../types';
@@ -31,6 +31,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const animationRef = useRef<number>();
+    const pitchId = useId();
 
     const [mediaPlaying, setMediaPlaying] = useState(false);
 
@@ -233,20 +234,24 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
                             className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
+                            aria-label={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
+                            title={isDeckPlaying ? "Pause" : "Play"}
                         >
                             {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
                         </button>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-500">PITCH</span>
+                        <label htmlFor={pitchId} className="text-xs font-mono text-gray-500">PITCH</label>
                         <input
+                            id={pitchId}
                             type="range"
                             min="-100"
                             max="100"
                             value={pitch}
                             onChange={handlePitchChange}
-                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            aria-label={`Pitch Control for Deck ${id}`}
                         />
                         <span className="text-xs w-8 text-right font-mono text-gray-300">{pitch > 0 ? '+' : ''}{pitch}%</span>
                     </div>
