@@ -1,13 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { aiService } from '../services/AILearningService';
 import { predictionService } from '../services/PredictionService';
 import { AIPersonality } from '../types';
 import { BarChart2, Activity, Zap, Users, Brain, TrendingUp } from 'lucide-react';
 
+const TraitBar = ({ label, value, icon: Icon, color }: { label: string, value: number, icon: any, color: string }) => (
+    <div className="mb-4">
+        <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center gap-2 text-gray-300">
+                <Icon size={16} className={color} />
+                <span className="text-sm font-medium">{label}</span>
+            </div>
+            <span className="text-sm font-mono">{Math.round(value)}%</span>
+        </div>
+        <div className="w-full bg-gray-700 rounded-full h-2.5">
+            <div
+                className={`h-2.5 rounded-full transition-all duration-1000 ${color.replace('text-', 'bg-')}`}
+                style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+            ></div>
+        </div>
+    </div>
+);
+
 const AnalyticsDashboard: React.FC = () => {
     const [personality, setPersonality] = useState<AIPersonality>(aiService.getPersonality());
     const [stats, setStats] = useState(aiService.getSessionSummary());
     const [prediction, setPrediction] = useState<number | null>(null);
+
+    const recentInteractions = useMemo(() => {
+        return stats.interactions.slice(-50).reverse();
+    }, [stats]);
 
     useEffect(() => {
         const unsub = aiService.subscribe((p) => {
@@ -32,24 +54,6 @@ const AnalyticsDashboard: React.FC = () => {
             setPrediction(pred);
         });
     }, []);
-
-    const TraitBar = ({ label, value, icon: Icon, color }: { label: string, value: number, icon: any, color: string }) => (
-        <div className="mb-4">
-            <div className="flex justify-between items-center mb-1">
-                <div className="flex items-center gap-2 text-gray-300">
-                    <Icon size={16} className={color} />
-                    <span className="text-sm font-medium">{label}</span>
-                </div>
-                <span className="text-sm font-mono">{Math.round(value)}%</span>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-2.5">
-                <div
-                    className={`h-2.5 rounded-full transition-all duration-1000 ${color.replace('text-', 'bg-')}`}
-                    style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-                ></div>
-            </div>
-        </div>
-    );
 
     return (
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 h-full overflow-y-auto">
@@ -104,8 +108,8 @@ const AnalyticsDashboard: React.FC = () => {
                     <div className="mt-6">
                         <h4 className="text-xs uppercase text-gray-500 font-bold mb-2">Recent Activity Log</h4>
                         <div className="h-48 overflow-y-auto space-y-2 text-xs font-mono bg-black p-2 rounded">
-                            {stats.interactions.slice().reverse().map((int, i) => (
-                                <div key={i} className="text-gray-400 border-b border-gray-800 pb-1 mb-1">
+                            {recentInteractions.map((int, i) => (
+                                <div key={`${int.timestamp}-${i}`} className="text-gray-400 border-b border-gray-800 pb-1 mb-1">
                                     <span className="text-purple-500">[{new Date(int.timestamp).toLocaleTimeString()}]</span> {int.type} @ {int.target}
                                 </div>
                             ))}
