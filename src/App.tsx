@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Layout, BarChart2, Radio, Swords, Mic } from 'lucide-react';
 import DJDeck, { DJDeckRef } from './components/DJDeck';
 import Mixer from './components/Mixer';
@@ -108,9 +108,9 @@ function App() {
       }
   };
 
-  const handleTriggerDrumVideo = (url: string) => {
+  const handleTriggerDrumVideo = useCallback((url: string) => {
       setActiveDrumVideo(url);
-  };
+  }, []);
 
   const toggleVJEffect = () => {
       const effects = ['none', 'datamosh', 'pixelsort', 'feedback', 'colorshift'] as const;
@@ -151,7 +151,7 @@ function App() {
     }
   }, [lastMessage]);
 
-  const handleLoadTrack = (track: Track, deckId: number) => {
+  const handleLoadTrack = useCallback((track: Track, deckId: number) => {
     if (deckId === 0) {
         setDeckATrack(track);
         if (view === 'battle') {
@@ -162,10 +162,10 @@ function App() {
         setDeckBTrack(track);
     }
     aiService.logInteraction('load_track', `deck_${deckId}`, track.id);
-  };
+  }, [view]);
 
-  const handleLoadSample = (url: string, name: string) => { setPendingSample({ url, name }); };
-  const handleSampleAssigned = () => { setPendingSample(null); };
+  const handleLoadSample = useCallback((url: string, name: string) => { setPendingSample({ url, name }); }, []);
+  const handleSampleAssigned = useCallback(() => { setPendingSample(null); }, []);
 
   const handleDeckParamChange = (deckId: number, param: string, value: any) => {
       if (param === 'playing') {
