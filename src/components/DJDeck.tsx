@@ -260,4 +260,4 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
     );
 });
 
-export default DJDeck;
+export default React.memo(DJDeck);
