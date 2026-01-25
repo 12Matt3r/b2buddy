@@ -8,15 +8,19 @@ export const handler: Handler = async (event, context) => {
     try {
         const { command, userId, payload } = JSON.parse(event.body || '{}');
 
+        // Sanitize inputs to prevent Log Injection (CWE-117) and DoS
+        const safeCommand = String(command || '').replace(/[\r\n]+/g, '_').substring(0, 100);
+        const safeUserId = String(userId || '').replace(/[\r\n]+/g, '_').substring(0, 50);
+
         // Handle mobile commands like "Send Track to Deck A"
         // In a real app, this would use WebSockets (e.g. Pusher, Ably) to push to the desktop client
-        console.log(`Received mobile command: ${command} from ${userId}`);
+        console.log(`Received mobile command: ${safeCommand} from ${safeUserId}`);
 
         return {
             statusCode: 200,
             body: JSON.stringify({
                 success: true,
-                message: `Command ${command} processed`,
+                message: `Command ${safeCommand} processed`,
                 timestamp: Date.now()
             }),
         };
