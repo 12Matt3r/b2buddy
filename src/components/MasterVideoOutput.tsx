@@ -175,4 +175,4 @@ const MasterVideoOutput: React.FC<MasterVideoOutputProps> = ({ channels, deckAVi
     );
 };
 
-export default MasterVideoOutput;
+export default React.memo(MasterVideoOutput);

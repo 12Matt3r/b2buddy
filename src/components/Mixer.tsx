@@ -118,4 +118,4 @@ const Mixer: React.FC<MixerProps> = ({ crossfader, setCrossfader, channels, setC
     );
 };
 
-export default Mixer;
+export default React.memo(Mixer);
