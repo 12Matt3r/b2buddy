@@ -6,7 +6,7 @@ interface MobileNavProps {
     onTabChange: (tab: 'studio' | 'library' | 'battle' | 'analytics') => void;
 }
 
-const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) => {
+const MobileNav = ({ activeTab, onTabChange }: MobileNavProps) => {
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 pb-safe z-50">
             <div className="flex justify-around items-center h-16">
@@ -46,4 +46,4 @@ const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) => {
     );
 };
 
-export default MobileNav;
+export default React.memo(MobileNav);
