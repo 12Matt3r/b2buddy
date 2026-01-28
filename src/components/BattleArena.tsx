@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { battleService, BattleState } from '../services/BattleService';
 import { Swords, Trophy, User, Cpu } from 'lucide-react';
 
-const BattleArena: React.FC = () => {
+const BattleArena = () => {
     const [state, setState] = useState<BattleState>(battleService.getState());
 
     useEffect(() => {
@@ -130,4 +130,4 @@ const BattleArena: React.FC = () => {
     );
 };
 
-export default BattleArena;
+export default React.memo(BattleArena);

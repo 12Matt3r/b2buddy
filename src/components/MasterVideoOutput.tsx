@@ -13,7 +13,7 @@ interface MasterVideoOutputProps {
     activeEffect: 'datamosh' | 'pixelsort' | 'feedback' | 'colorshift' | 'none';
 }
 
-const MasterVideoOutput: React.FC<MasterVideoOutputProps> = ({ channels, deckAVideo, deckBVideo, deckAPlaying, deckBPlaying, drumVideoClip, activeEffect }) => {
+const MasterVideoOutput = ({ channels, deckAVideo, deckBVideo, deckAPlaying, deckBPlaying, drumVideoClip, activeEffect }: MasterVideoOutputProps) => {
     // Channel 1 = Deck A Video
     // Channel 3 = Deck B Video
     const chA = channels[1];
@@ -175,4 +175,4 @@ const MasterVideoOutput: React.FC<MasterVideoOutputProps> = ({ channels, deckAVi
     );
 };
 
-export default MasterVideoOutput;
+export default React.memo(MasterVideoOutput);
