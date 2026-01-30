@@ -261,16 +261,18 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                     <span>{track.artist}</span>
                                     <span>{track.bpm} BPM • {track.key}</span>
                                 </div>
-                                <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => onLoadTrack(track, 0)}
-                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none"
+                                        aria-label={`Load ${track.title} to Deck A`}
                                     >
                                         Load A
                                     </button>
                                     <button
                                         onClick={() => onLoadTrack(track, 1)}
-                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded"
+                                        className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none"
+                                        aria-label={`Load ${track.title} to Deck B`}
                                     >
                                         Load B
                                     </button>
@@ -331,9 +333,21 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                         {pl.tracks.map((t, idx) => (
                                             <div key={`${t.id}-${idx}`} className="text-xs text-gray-400 truncate flex justify-between group">
                                                 <span>{t.title}</span>
-                                                <div className="hidden group-hover:flex gap-1">
-                                                     <button onClick={(e) => { e.stopPropagation(); onLoadTrack(t, 0); }} className="hover:text-white">A</button>
-                                                     <button onClick={(e) => { e.stopPropagation(); onLoadTrack(t, 1); }} className="hover:text-white">B</button>
+                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                                                     <button
+                                                         onClick={(e) => { e.stopPropagation(); onLoadTrack(t, 0); }}
+                                                         className="hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:underline"
+                                                         aria-label={`Load ${t.title} to Deck A`}
+                                                     >
+                                                         A
+                                                     </button>
+                                                     <button
+                                                         onClick={(e) => { e.stopPropagation(); onLoadTrack(t, 1); }}
+                                                         className="hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:underline"
+                                                         aria-label={`Load ${t.title} to Deck B`}
+                                                     >
+                                                         B
+                                                     </button>
                                                 </div>
                                             </div>
                                         ))}
@@ -355,11 +369,23 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
                                     <div className="text-xs text-gray-500">{track.type.toUpperCase()}</div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                         <button onClick={() => onLoadTrack(track, 0)} className="text-xs bg-purple-600 px-2 py-1 rounded">A</button>
-                                         <button onClick={() => onLoadTrack(track, 1)} className="text-xs bg-purple-600 px-2 py-1 rounded">B</button>
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                                         <button
+                                             onClick={() => onLoadTrack(track, 0)}
+                                             className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none"
+                                             aria-label={`Load ${track.title} to Deck A`}
+                                         >
+                                             A
+                                         </button>
+                                         <button
+                                             onClick={() => onLoadTrack(track, 1)}
+                                             className="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none"
+                                             aria-label={`Load ${track.title} to Deck B`}
+                                         >
+                                             B
+                                         </button>
                                     </div>
-                                    <button onClick={() => handleRemoveFromQueue(idx)} className="text-gray-500 hover:text-red-400" aria-label="Remove from queue" title="Remove from queue">×</button>
+                                    <button onClick={() => handleRemoveFromQueue(idx)} className="text-gray-500 hover:text-red-400 focus-visible:text-red-400 focus-visible:outline-none" aria-label="Remove from queue" title="Remove from queue">×</button>
                                 </div>
                             </div>
                         ))}
