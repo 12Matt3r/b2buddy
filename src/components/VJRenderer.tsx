@@ -24,6 +24,16 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
     // State for controls
     const [effect, setEffectState] = useState<'datamosh' | 'pixelsort' | 'feedback' | 'colorshift' | 'none'>('datamosh');
+
+    // Store frequently changing props in a ref to avoid restarting the render loop
+    const renderVals = useRef({
+        videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB, effect
+    });
+
+    useEffect(() => {
+        renderVals.current = { videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB, effect };
+    }, [videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB, effect]);
+
     const controls = useRef({
         trail: 0.9, motion: 0.12, hue: 0.0, history: 6, extrap: 0.0, intensity: 0.5,
         displacement: 0.01, feedback: 0.2, threshold: 0.5, brightness: 0.0, contrast: 1.0, saturation: 1.0
@@ -148,6 +158,9 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
         const render = () => {
             const { gl, programs, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
             if (!gl) return;
+
+            // Get latest values from ref to avoid loop restart
+            const { videoSourceA, videoSourceB, opacityA, opacityB, mixBlendModeB, effect } = renderVals.current;
 
             const width = gl.canvas.width;
             const height = gl.canvas.height;
@@ -275,7 +288,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
         animationRef.current = requestAnimationFrame(render);
         return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-    }, [effect, opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB]);
+    }, []);
 
     return (
         <canvas
