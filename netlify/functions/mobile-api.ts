@@ -8,15 +8,28 @@ export const handler: Handler = async (event, context) => {
     try {
         const { command, userId, payload } = JSON.parse(event.body || '{}');
 
+        // Security Validation & Sanitization
+        if (typeof command !== 'string' || typeof userId !== 'string') {
+             return { statusCode: 400, body: JSON.stringify({ error: 'Invalid input format' }) };
+        }
+
+        const sanitize = (str: string, maxLength: number) => {
+            return str.replace(/[\r\n]+/g, '') // Remove newlines (Log Injection prevention)
+                      .slice(0, maxLength);     // Length limit (DoS prevention)
+        };
+
+        const safeCommand = sanitize(command, 100);
+        const safeUserId = sanitize(userId, 50);
+
         // Handle mobile commands like "Send Track to Deck A"
         // In a real app, this would use WebSockets (e.g. Pusher, Ably) to push to the desktop client
-        console.log(`Received mobile command: ${command} from ${userId}`);
+        console.log(`Received mobile command: ${safeCommand} from ${safeUserId}`);
 
         return {
             statusCode: 200,
             body: JSON.stringify({
                 success: true,
-                message: `Command ${command} processed`,
+                message: `Command ${safeCommand} processed`,
                 timestamp: Date.now()
             }),
         };
