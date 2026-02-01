@@ -389,4 +389,4 @@ const Library: React.FC<LibraryProps> = ({ onLoadTrack, onLoadSample }) => {
     );
 };
 
-export default Library;
+export default React.memo(Library);
