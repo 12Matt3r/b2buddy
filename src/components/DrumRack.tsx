@@ -132,4 +132,4 @@ const DrumRack: React.FC<DrumRackProps> = ({ pendingSample, onSampleAssigned, on
     );
 };
 
-export default DrumRack;
+export default React.memo(DrumRack);
