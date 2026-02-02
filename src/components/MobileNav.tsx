@@ -46,4 +46,4 @@ const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) => {
     );
 };
 
-export default MobileNav;
+export default React.memo(MobileNav);
