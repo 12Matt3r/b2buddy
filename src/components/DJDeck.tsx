@@ -222,6 +222,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         ref={canvasRef}
                         width={300}
                         height={60}
+                    role="img"
+                    aria-label={`Deck ${id} Waveform Visualization`}
                         className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-black/50 rounded backdrop-blur-sm"
                     />
                 </div>
@@ -232,6 +234,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         <button
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
+                        aria-label={`Deck ${id} ${isDeckPlaying ? 'Pause' : 'Play'}`}
+                        title={`Deck ${id} ${isDeckPlaying ? 'Pause' : 'Play'}`}
                             className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
                         >
                             {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
@@ -246,6 +250,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             max="100"
                             value={pitch}
                             onChange={handlePitchChange}
+                        aria-label={`Deck ${id} Pitch Control`}
                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                         />
                         <span className="text-xs w-8 text-right font-mono text-gray-300">{pitch > 0 ? '+' : ''}{pitch}%</span>
