@@ -6,7 +6,16 @@ export const handler: Handler = async (event, context) => {
     }
 
     try {
-        const { interaction, aiPersonality } = JSON.parse(event.body || '{}');
+        const body = JSON.parse(event.body || '{}');
+        const { interaction, aiPersonality } = body;
+
+        // Input validation
+        if (!interaction || !aiPersonality || typeof interaction !== 'object') {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Invalid input: Missing interaction or aiPersonality' })
+            };
+        }
 
         // Logic to update personality based on interaction
         // This mirrors the frontend mock logic but would run server-side
@@ -15,7 +24,9 @@ export const handler: Handler = async (event, context) => {
         const evolvedPersonality = { ...aiPersonality };
 
         if (interaction.type === 'fader' && interaction.target === 'crossfader') {
-             evolvedPersonality.energyManagement = Math.min(100, evolvedPersonality.energyManagement + 0.5);
+             // Safe update with default fallback
+             const currentEnergy = typeof evolvedPersonality.energyManagement === 'number' ? evolvedPersonality.energyManagement : 50;
+             evolvedPersonality.energyManagement = Math.min(100, currentEnergy + 0.5);
         }
 
         return {
