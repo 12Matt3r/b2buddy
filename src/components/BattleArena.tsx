@@ -130,4 +130,5 @@ const BattleArena: React.FC = () => {
     );
 };
 
-export default BattleArena;
+// Memoize to decouple from App state updates
+export default React.memo(BattleArena);
