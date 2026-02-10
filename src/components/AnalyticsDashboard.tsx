@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { aiService } from '../services/AILearningService';
 import { predictionService } from '../services/PredictionService';
 import { AIPersonality } from '../types';
@@ -32,6 +32,11 @@ const AnalyticsDashboard: React.FC = () => {
             setPrediction(pred);
         });
     }, []);
+
+    // Limit the displayed interactions to the last 50 to prevent performance issues with large lists
+    const recentInteractions = useMemo(() => {
+        return stats.interactions.slice(-50).reverse();
+    }, [stats]);
 
     const TraitBar = ({ label, value, icon: Icon, color }: { label: string, value: number, icon: any, color: string }) => (
         <div className="mb-4">
@@ -104,7 +109,7 @@ const AnalyticsDashboard: React.FC = () => {
                     <div className="mt-6">
                         <h4 className="text-xs uppercase text-gray-500 font-bold mb-2">Recent Activity Log</h4>
                         <div className="h-48 overflow-y-auto space-y-2 text-xs font-mono bg-black p-2 rounded">
-                            {stats.interactions.slice().reverse().map((int, i) => (
+                            {recentInteractions.map((int, i) => (
                                 <div key={i} className="text-gray-400 border-b border-gray-800 pb-1 mb-1">
                                     <span className="text-purple-500">[{new Date(int.timestamp).toLocaleTimeString()}]</span> {int.type} @ {int.target}
                                 </div>
