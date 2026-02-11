@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState, useId } from 'react';
 import { Play, Pause, Disc, Video, Youtube } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { Track } from '../types';
@@ -28,6 +28,7 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
     const { isLoaded, isPlaying, play: playAudio, pause: pauseAudio, setPlaybackRate, setVolume, getWaveformData } = useAudio(isAudio ? (track?.url || null) : null);
 
     const [pitch, setPitch] = useState(0);
+    const pitchId = useId();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const animationRef = useRef<number>();
@@ -223,6 +224,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         width={300}
                         height={60}
                         className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-black/50 rounded backdrop-blur-sm"
+                        role="img"
+                        aria-label={`Waveform visualization for Deck ${id}`}
                     />
                 </div>
 
@@ -232,21 +235,24 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         <button
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
-                            className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
+                            className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800`}
+                            aria-label={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
+                            title={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
                         >
                             {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
                         </button>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-500">PITCH</span>
+                        <label htmlFor={pitchId} className="text-xs font-mono text-gray-500">PITCH</label>
                         <input
+                            id={pitchId}
                             type="range"
                             min="-100"
                             max="100"
                             value={pitch}
                             onChange={handlePitchChange}
-                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                         <span className="text-xs w-8 text-right font-mono text-gray-300">{pitch > 0 ? '+' : ''}{pitch}%</span>
                     </div>
