@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState, useId } from 'react';
 import { Play, Pause, Disc, Video, Youtube } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { Track } from '../types';
@@ -43,6 +43,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
             : isYouTube
                 ? !!track?.youtubeUrl
                 : false;
+
+    const pitchId = useId();
 
     // --- Imperative Handle ---
     useImperativeHandle(ref, () => ({
@@ -223,6 +225,8 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                         width={300}
                         height={60}
                         className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-black/50 rounded backdrop-blur-sm"
+                        role="img"
+                        aria-label={`Waveform visualization for Deck ${id}`}
                     />
                 </div>
 
@@ -233,14 +237,17 @@ const DJDeck = forwardRef<DJDeckRef, DJDeckProps>(({ id, track, isActive, volume
                             onClick={handlePlayToggle}
                             disabled={!isDeckLoaded}
                             className={`p-4 rounded-full ${isDeckPlaying ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'} hover:opacity-80 transition-all`}
+                            aria-label={isDeckPlaying ? `Pause Deck ${id}` : `Play Deck ${id}`}
+                            title={isDeckPlaying ? "Pause" : "Play"}
                         >
                             {isDeckPlaying ? <Pause size={24} /> : <Play size={24} />}
                         </button>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-500">PITCH</span>
+                        <label htmlFor={pitchId} className="text-xs font-mono text-gray-500">PITCH</label>
                         <input
+                            id={pitchId}
                             type="range"
                             min="-100"
                             max="100"
