@@ -29,6 +29,13 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
         displacement: 0.01, feedback: 0.2, threshold: 0.5, brightness: 0.0, contrast: 1.0, saturation: 1.0
     });
 
+    // Refs for render loop parameters to avoid recreating loop
+    const renderParams = useRef({ opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB, effect });
+
+    useEffect(() => {
+        renderParams.current = { opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB, effect };
+    }, [opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB, effect]);
+
     // Expose controls to parent
     useImperativeHandle(ref, () => ({
         setEffect: (e) => setEffectState(e),
@@ -149,6 +156,9 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             const { gl, programs, positionBuffer, texCoordBuffer, textures, fbos, currentSource, currentDest, startTime } = resources.current;
             if (!gl) return;
 
+            // Get latest params from ref
+            const { opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB, effect } = renderParams.current;
+
             const width = gl.canvas.width;
             const height = gl.canvas.height;
             gl.viewport(0, 0, width, height);
@@ -167,10 +177,6 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
             }
 
             // 2. Mix A and B into 'mixed' texture (using Passthrough shader or custom mix shader)
-            // For MVP we just use opacity in JS to decide what to draw? No, we need to mix in WebGL.
-            // Or simpler: Draw A to FBO, then Draw B to FBO with blend?
-            // Let's use a simpler approach: Draw the "Visible" content to the 'mixed' FBO.
-
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbos.mixed);
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
@@ -181,9 +187,6 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
                 gl.useProgram(programs.passthrough);
 
                 // Uniforms
-                // We need to modify passthrough shader to handle opacity if we want true mixing
-                // But the provided shader doesn't have opacity uniform.
-                // Let's rely on standard gl blend func for now.
                 gl.enable(gl.BLEND);
                 if (blend === 'screen') gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR); // Approximation
                 else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Normal
@@ -202,11 +205,6 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, tex);
                 gl.uniform1i(gl.getUniformLocation(programs.passthrough, 'u_textureToDraw'), 0);
-
-                // Note: Opacity is tricky without shader support.
-                // We are stuck with provided shaders.
-                // WORKAROUND: If effects are active, we process ONE main output.
-                // Which source is "Webcam"? The MIXED result.
 
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
                 gl.disable(gl.BLEND);
@@ -275,7 +273,7 @@ const VJRenderer = forwardRef<VJRendererRef, VJRendererProps>(({ videoSourceA, v
 
         animationRef.current = requestAnimationFrame(render);
         return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-    }, [effect, opacityA, opacityB, mixBlendModeB, videoSourceA, videoSourceB]);
+    }, []); // Empty dependencies!
 
     return (
         <canvas
