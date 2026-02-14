@@ -6,7 +6,24 @@ export const handler: Handler = async (event, context) => {
     }
 
     try {
-        const { rounds = 3, difficulty = 'normal' } = JSON.parse(event.body || '{}');
+        const body = JSON.parse(event.body || '{}');
+        const { rounds = 3, difficulty = 'normal' } = body;
+
+        // Input Validation
+        if (!Number.isInteger(rounds) || rounds < 1 || rounds > 10) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Rounds must be an integer between 1 and 10' })
+            };
+        }
+
+        const validDifficulties = ['easy', 'normal', 'hard'];
+        if (!validDifficulties.includes(difficulty)) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Difficulty must be easy, normal, or hard' })
+            };
+        }
 
         const battleId = `battle_${Date.now()}`;
 
