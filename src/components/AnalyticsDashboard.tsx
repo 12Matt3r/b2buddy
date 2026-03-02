@@ -1,10 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { aiService } from '../services/AILearningService';
 import { predictionService } from '../services/PredictionService';
 import { AIPersonality } from '../types';
 import { BarChart2, Activity, Zap, Users, Brain, TrendingUp } from 'lucide-react';
 
-const AnalyticsDashboard: React.FC = () => {
+interface TraitBarProps {
+    label: string;
+    value: number;
+    icon: any;
+    color: string;
+}
+
+const TraitBar = memo(({ label, value, icon: Icon, color }: TraitBarProps) => (
+    <div className="mb-4">
+        <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center gap-2 text-gray-300">
+                <Icon size={16} className={color} />
+                <span className="text-sm font-medium">{label}</span>
+            </div>
+            <span className="text-sm font-mono">{Math.round(value)}%</span>
+        </div>
+        <div className="w-full bg-gray-700 rounded-full h-2.5">
+            <div
+                className={`h-2.5 rounded-full transition-all duration-1000 ${color.replace('text-', 'bg-')}`}
+                style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+            ></div>
+        </div>
+    </div>
+));
+
+const AnalyticsDashboard: React.FC = memo(() => {
     const [personality, setPersonality] = useState<AIPersonality>(aiService.getPersonality());
     const [stats, setStats] = useState(aiService.getSessionSummary());
     const [prediction, setPrediction] = useState<number | null>(null);
@@ -32,24 +57,6 @@ const AnalyticsDashboard: React.FC = () => {
             setPrediction(pred);
         });
     }, []);
-
-    const TraitBar = ({ label, value, icon: Icon, color }: { label: string, value: number, icon: any, color: string }) => (
-        <div className="mb-4">
-            <div className="flex justify-between items-center mb-1">
-                <div className="flex items-center gap-2 text-gray-300">
-                    <Icon size={16} className={color} />
-                    <span className="text-sm font-medium">{label}</span>
-                </div>
-                <span className="text-sm font-mono">{Math.round(value)}%</span>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-2.5">
-                <div
-                    className={`h-2.5 rounded-full transition-all duration-1000 ${color.replace('text-', 'bg-')}`}
-                    style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-                ></div>
-            </div>
-        </div>
-    );
 
     return (
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 h-full overflow-y-auto">
@@ -115,6 +122,6 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
         </div>
     );
-};
+});
 
 export default AnalyticsDashboard;
